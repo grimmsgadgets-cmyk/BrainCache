@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  braincache:
+    build: .
+    ports:
+      - "7337:7337"
+    volumes:
+      - braincache-data:/app/data
+    devices:
+      - /dev/snd:/dev/snd
+    group_add:
+      - audio
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
+      - PIPER_BINARY=/opt/piper/piper
+      - PIPER_MODEL=/opt/piper/voices/en_US-lessac-medium.onnx
+      - WHISPER_BINARY=/opt/whisper/main
+      - WHISPER_MODEL=/opt/whisper/models/ggml-base.en.bin
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  ollama-data:
+  braincache-data:

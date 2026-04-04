@@ -1,0 +1,24 @@
+# BrainCache configuration
+# All values can be overridden by environment variables
+# Environment variables take precedence over values here
+
+# Ollama (local LLM — no API key required)
+ollama_host: http://ollama:11434
+ollama_model: llama3.2
+
+# Database
+db_path: /app/data/braincache.db
+
+# Article polling schedule
+poll_interval_hours: 6
+
+# Piper TTS (text-to-speech)
+piper_binary: /opt/piper/piper
+piper_model: /opt/piper/voices/en_US-lessac-medium.onnx
+
+# whisper.cpp (speech-to-text)
+whisper_binary: /opt/whisper/main
+whisper_model: /opt/whisper/models/ggml-base.en.bin
+
+# Server
+server_port: 7337

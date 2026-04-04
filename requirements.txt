@@ -1,0 +1,30 @@
+# BrainCache — Python dependencies
+# No API keys. No external AI services.
+# All AI inference via local Ollama container.
+
+# Web framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# HTTP client (sync + async) — used for Ollama API calls
+# and article scraping
+httpx==0.28.1
+
+# RSS/Atom feed parsing
+feedparser==6.0.11
+
+# HTML parsing
+beautifulsoup4==4.12.3
+lxml==5.3.0
+
+# YAML config
+pyyaml==6.0.2
+
+# Async scheduling (Stage 4)
+apscheduler==3.10.4
+
+# WebSockets support for FastAPI (Stage 2)
+websockets==14.1
+
+# Pydantic (pinned for FastAPI compatibility)
+pydantic==2.10.3
