@@ -4,11 +4,11 @@ Local Linux CTI learning tool — Socratic sessions, voice
 interaction, and an I Don't Know notebook. Powered entirely
 by local AI via Ollama. No API keys. No accounts. No cloud.
 
-> **Status: in development.**
-> Session 1 complete — Docker infrastructure and Ollama client
-> are in place. Application logic is not yet built. The stack
-> will not run until a later session adds `main.py` and the
-> remaining backend modules.
+> **Status: in development — v0.2.0.**
+> Sessions 1–2 complete. The stack is runnable end-to-end:
+> Docker infrastructure, Ollama client, database layer,
+> scraper, REST API, and frontend are all in place.
+> Session/Notebook/TTS features (Stages 2–4) are not yet built.
 
 ## Quick start
 

@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BrainCache</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ================================================================
+       VARIABLES
+       ================================================================ */
+    :root {
+      --bg:         #0d0f12;
+      --surface:    #13161b;
+      --surface2:   #1a1e25;
+      --surface3:   #0f1218;
+      --border:     #22272f;
+      --accent:     #c8a96e;
+      --accent-dim: #8a7245;
+      --gold-line:  #6b5a35;
+      --text:       #e8eaf0;
+      --muted:      #6b7280;
+      --success:    #4ade80;
+      --warn:       #fbbf24;
+      --danger:     #f87171;
+      --info:       #60a5fa;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-mono:    'DM Mono', 'Fira Mono', monospace;
+    }
+
+    /* ================================================================
+       RESET
+       ================================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ================================================================
+       SCROLLBAR
+       ================================================================ */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--gold-line); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+    /* ================================================================
+       BODY
+       ================================================================ */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ================================================================
+       HEADER
+       ================================================================ */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 52px;
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      z-index: 100;
+    }
+
+    /* Vine motif bottom border — wavy line with dot nodes, 32px tile */
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 5px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='5' viewBox='0 0 32 5'%3E%3Cpath d='M0 3 C4 1 8 4 12 2.5 C16 1 20 4 24 2.5 C28 1 30 3 32 3' stroke='%236b5a35' stroke-width='0.75' fill='none'/%3E%3Ccircle cx='8' cy='3' r='0.9' fill='%236b5a35'/%3E%3Ccircle cx='24' cy='2.5' r='0.9' fill='%236b5a35'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-size: 32px 5px;
+    }
+
+    /* Logo group: botanical mark + wordmark */
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .logo-mark { display: block; flex-shrink: 0; }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      white-space: nowrap;
+    }
+
+    /* Thin vertical rule between logo and nav */
+    .logo-divider {
+      width: 1px;
+      height: 28px;
+      background: var(--gold-line);
+      margin: 0 18px;
+      flex-shrink: 0;
+    }
+
+    /* ================================================================
+       NAVIGATION TABS
+       ================================================================ */
+    nav {
+      display: flex;
+      gap: 2px;
+      flex: 1;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+      padding: 6px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.15s;
+      position: relative;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); }
+
+    /* Curved SVG underline for active tab — bows up at ends */
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 56px;
+      height: 5px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='5' viewBox='0 0 56 5'%3E%3Cpath d='M2 4 C8 4 12 1.5 28 1.5 C44 1.5 48 4 54 4' stroke='%23c8a96e' stroke-width='0.85' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center;
+      background-size: contain;
+    }
+
+    /* Faint botanical hint on inactive tab hover */
+    .tab-btn:not(.active):hover::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 38px;
+      height: 4px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='38' height='4' viewBox='0 0 38 4'%3E%3Cpath d='M2 3 C7 3 11 1 19 1 C27 1 31 3 36 3' stroke='%236b5a35' stroke-width='0.75' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center;
+      background-size: contain;
+      opacity: 0.7;
+    }
+
+    /* Tab badge */
+    .tab-badge {
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 999px;
+      display: none;
+    }
+    .tab-badge.visible { display: inline-block; }
+
+    /* ================================================================
+       OLLAMA STATUS — botanical flower indicator
+       ================================================================ */
+    .ollama-status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    #ollama-flower {
+      flex-shrink: 0;
+      transition: opacity 0.4s;
+    }
+
+    .ollama-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ================================================================
+       MAIN CONTENT
+       ================================================================ */
+    main {
+      margin-top: 52px;
+      flex: 1;
+      padding: 28px 24px;
+      max-width: 1100px;
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ================================================================
+       TOOLBAR
+       ================================================================ */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    /* ================================================================
+       INPUTS — bottom-border only
+       ================================================================ */
+    select, input[type="text"], input[type="url"] {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--accent-dim);
+      border-radius: 0;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 7px 4px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    select:focus,
+    input[type="text"]:focus,
+    input[type="url"]:focus {
+      border-bottom-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(200, 169, 110, 0.15);
+    }
+    select { cursor: pointer; padding-right: 20px; }
+
+    /* ================================================================
+       BUTTONS
+       ================================================================ */
+
+    /* Ghost / secondary */
+    .btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover {
+      border-color: var(--accent-dim);
+      color: var(--text);
+    }
+
+    /* Primary — gold gradient, dark text */
+    .btn.primary {
+      background: linear-gradient(140deg, var(--accent-dim) 0%, #5e4820 100%);
+      border: 1px solid var(--accent);
+      color: var(--bg);
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn.primary:hover {
+      background: linear-gradient(140deg, var(--accent) 0%, var(--accent-dim) 100%);
+    }
+
+    /* Danger — stays ghost until hover */
+    .btn.danger {
+      color: var(--muted);
+      border-color: var(--border);
+    }
+    .btn.danger:hover {
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .btn.sm { padding: 4px 9px; font-size: 10px; }
+
+    /* ================================================================
+       ARTICLE CARDS
+       ================================================================ */
+    .article-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .article-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      position: relative;
+    }
+    .article-card:hover {
+      border-color: var(--accent-dim);
+      background: var(--surface2);
+      transform: translateY(-1px);
+    }
+
+    /* Top-left corner ornament — curved flourish with tendril */
+    .article-card::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px;
+      width: 12px; height: 12px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 10 C2 5.5 5.5 2 10 2' stroke='%236b5a35' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M2 6.5 C1.5 4 2.5 2 4.5 2' stroke='%236b5a35' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+
+    /* Bottom-right corner ornament — mirrored */
+    .article-card::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; right: -1px;
+      width: 12px; height: 12px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M10 2 C10 6.5 6.5 10 2 10' stroke='%236b5a35' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M10 5.5 C10.5 8 9.5 10 7.5 10' stroke='%236b5a35' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+
+    /* Ornaments transition to accent on hover */
+    .article-card:hover::before {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 10 C2 5.5 5.5 2 10 2' stroke='%23c8a96e' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M2 6.5 C1.5 4 2.5 2 4.5 2' stroke='%23c8a96e' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+    .article-card:hover::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M10 2 C10 6.5 6.5 10 2 10' stroke='%23c8a96e' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M10 5.5 C10.5 8 9.5 10 7.5 10' stroke='%23c8a96e' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* Article title: Cormorant Garamond */
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text);
+      flex: 1;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.35;
+    }
+
+    /* ================================================================
+       BADGES — bordered label with diamond accent
+       ================================================================ */
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 400;
+      padding: 2px 8px;
+      border-radius: 2px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      letter-spacing: 0.03em;
+    }
+    /* Rotated 4px square = diamond */
+    .badge::before {
+      content: '';
+      display: inline-block;
+      width: 4px; height: 4px;
+      transform: rotate(45deg);
+      flex-shrink: 0;
+    }
+    .badge-rss {
+      background: rgba(96, 165, 250, 0.07);
+      color: var(--info);
+      border-color: rgba(96, 165, 250, 0.2);
+    }
+    .badge-rss::before    { background: var(--info); }
+    .badge-scrape {
+      background: rgba(251, 191, 36, 0.07);
+      color: var(--warn);
+      border-color: rgba(251, 191, 36, 0.2);
+    }
+    .badge-scrape::before { background: var(--warn); }
+    .badge-ns {
+      background: rgba(107, 114, 128, 0.07);
+      color: var(--muted);
+      border-color: rgba(107, 114, 128, 0.2);
+    }
+    .badge-ns::before     { background: var(--muted); }
+    .badge-ip {
+      background: rgba(74, 222, 128, 0.07);
+      color: var(--success);
+      border-color: rgba(74, 222, 128, 0.2);
+    }
+    .badge-ip::before     { background: var(--success); }
+    .badge-done {
+      background: rgba(96, 165, 250, 0.07);
+      color: var(--info);
+      border-color: rgba(96, 165, 250, 0.2);
+    }
+    .badge-done::before   { background: var(--info); }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .card-summary {
+      font-size: 12px;
+      color: var(--muted);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.55;
+    }
+
+    /* ================================================================
+       EMPTY STATE — Art Nouveau arch / cartouche frame
+       ================================================================ */
+    .empty-state {
+      position: relative;
+      text-align: center;
+      color: var(--muted);
+      padding: 70px 20px;
+      font-size: 13px;
+    }
+    .empty-state::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 120px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120' viewBox='0 0 300 120' fill='none'%3E%3Cpath d='M22 112 L22 58 Q22 10 150 10 Q278 10 278 58 L278 112 L22 112 Z' stroke='%236b5a35' stroke-width='1' fill='none'/%3E%3Cpath d='M22 112 C14 112 6 104 6 96' stroke='%236b5a35' stroke-width='0.75' fill='none' stroke-linecap='round'/%3E%3Cpath d='M278 112 C286 112 294 104 294 96' stroke='%236b5a35' stroke-width='0.75' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='150' cy='10' r='2.5' fill='%236b5a35'/%3E%3Cpath d='M130 10 C136 5 143 3.5 150 3.5 C157 3.5 164 5 170 10' stroke='%236b5a35' stroke-width='0.75' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      pointer-events: none;
+    }
+    .empty-state > * { position: relative; z-index: 1; }
+
+    /* ================================================================
+       SOURCES TABLE
+       ================================================================ */
+    .table-wrap { overflow-x: auto; margin-bottom: 32px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    /* Table header: DM Mono uppercase, vine motif bottom border */
+    th {
+      text-align: left;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+      padding: 8px 12px 14px;
+      white-space: nowrap;
+      /* Vine repeats along the bottom of each th cell */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='5' viewBox='0 0 32 5'%3E%3Cpath d='M0 3 C4 1 8 4 12 2.5 C16 1 20 4 24 2.5 C28 1 30 3 32 3' stroke='%236b5a35' stroke-width='0.75' fill='none'/%3E%3Ccircle cx='8' cy='3' r='0.85' fill='%236b5a35'/%3E%3Ccircle cx='24' cy='2.5' r='0.85' fill='%236b5a35'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-position: left bottom;
+      background-size: 32px 5px;
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    /* Alternating row depth */
+    tbody tr:nth-child(even) td { background: var(--surface3); }
+    tbody tr:hover td { background: var(--surface2) !important; }
+
+    .td-url {
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .td-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .poll-result {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--success);
+      white-space: nowrap;
+    }
+    .poll-result.error { color: var(--danger); }
+
+    /* ================================================================
+       FORM SECTION LABEL — text with fading rules either side
+       ================================================================ */
+    .form-section-label {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .form-section-label span {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    /* Left rule: fades left-to-right from transparent to gold-line */
+    .form-section-label::before {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--gold-line));
+    }
+    /* Right rule: fades right-to-left */
+    .form-section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to left, transparent, var(--gold-line));
+    }
+
+    /* ================================================================
+       ADD SOURCE FORM — decorative frame with corner ornaments
+       ================================================================ */
+    .add-form {
+      background: var(--surface);
+      border: 1px solid var(--gold-line);
+      border-radius: 2px;
+      padding: 20px;
+      position: relative;
+    }
+
+    /* Four corner ornaments positioned via span.form-corner.{tl/tr/bl/br} */
+    .form-corner {
+      position: absolute;
+      width: 16px; height: 16px;
+      pointer-events: none;
+      display: block;
+      background-repeat: no-repeat;
+      background-size: 16px 16px;
+    }
+    .form-corner.tl {
+      top: -1px; left: -1px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M2 13 C2 7 7 2 13 2' stroke='%238a7245' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M2 8.5 C1.5 5.5 2.5 3 5.5 2' stroke='%238a7245' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+    .form-corner.tr {
+      top: -1px; right: -1px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M14 13 C14 7 9 2 3 2' stroke='%238a7245' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M14 8.5 C14.5 5.5 13.5 3 10.5 2' stroke='%238a7245' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+    .form-corner.bl {
+      bottom: -1px; left: -1px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M2 3 C2 9 7 14 13 14' stroke='%238a7245' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M2 7.5 C1.5 10.5 2.5 13 5.5 14' stroke='%238a7245' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+    .form-corner.br {
+      bottom: -1px; right: -1px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M14 3 C14 9 9 14 3 14' stroke='%238a7245' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M14 7.5 C14.5 10.5 13.5 13 10.5 14' stroke='%238a7245' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+
+    .form-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 12px;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-field label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+      color: var(--muted);
+    }
+    .form-field input, .form-field select { min-width: 180px; }
+    #selector-field { display: none; }
+
+    /* ================================================================
+       STUB VIEWS
+       ================================================================ */
+    .stub-view {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      text-align: center;
+      gap: 16px;
+    }
+    .stub-view h2 {
+      font-family: var(--font-display);
+      font-size: 30px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+    }
+    .stub-view p {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      max-width: 420px;
+      line-height: 1.7;
+    }
+
+    .session-url-row {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: 560px;
+    }
+    .session-url-row input { flex: 1; }
+
+    /* ================================================================
+       TOAST NOTIFICATIONS
+       ================================================================ */
+    #toast-container {
+      position: fixed;
+      bottom: 20px; right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 9999;
+    }
+    .toast {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      max-width: 340px;
+      animation: slideInRight 0.25s ease;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      line-height: 1.5;
+    }
+    .toast.info    { border-left: 2px solid var(--accent); }
+    .toast.success { border-left: 2px solid var(--success); }
+    .toast.error   { border-left: 2px solid var(--danger); }
+
+    .toast-leaf { flex-shrink: 0; }
+
+    @keyframes slideInRight {
+      from { transform: translateX(40px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-group">
+    <!--
+      Botanical mark: single stem with two opposing curved leaves.
+      Stroke-only, hand-drawn feel, no fill.
+    -->
+    <svg class="logo-mark" width="24" height="28" viewBox="0 0 24 28" fill="none"
+         xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M12 27 C12 20 12 8 12 3"
+            stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M12 19 C9 17 5 13 6.5 9 C8 5.5 12 12 12 16"
+            stroke="var(--accent)" stroke-width="1.5" fill="none"
+            stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M12 16 C15 13 19.5 9.5 17.5 5.5 C16 2.5 12 10 12 14"
+            stroke="var(--accent)" stroke-width="1.5" fill="none"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="logo">BrainCache</span>
+  </div>
+  <div class="logo-divider"></div>
+  <nav>
+    <button class="tab-btn active" data-tab="feed" onclick="switchTab('feed')">
+      Feed <span id="feed-badge" class="tab-badge"></span>
+    </button>
+    <button class="tab-btn" data-tab="session" onclick="switchTab('session')">Session</button>
+    <button class="tab-btn" data-tab="notebook" onclick="switchTab('notebook')">Notebook</button>
+    <button class="tab-btn" data-tab="sources" onclick="switchTab('sources')">Sources</button>
+  </nav>
+  <div class="ollama-status">
+    <!--
+      Flower indicator: 6 petals around center, color driven by JS.
+      Amber = checking, green = ready, red = unavailable.
+    -->
+    <svg id="ollama-flower" width="16" height="16" viewBox="0 0 16 16" fill="none"
+         xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24"/>
+      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24" transform="rotate(60 8 8)"/>
+      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24" transform="rotate(120 8 8)"/>
+      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24" transform="rotate(180 8 8)"/>
+      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24" transform="rotate(240 8 8)"/>
+      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24" transform="rotate(300 8 8)"/>
+      <circle class="petal" cx="8" cy="8" r="2" fill="#fbbf24"/>
+    </svg>
+    <span id="ollama-label" class="ollama-label">checking…</span>
+  </div>
+</header>
+
+<main>
+  <!-- Feed view -->
+  <div id="view-feed" class="view active">
+    <div class="toolbar">
+      <select id="source-filter" onchange="filterArticles()">
+        <option value="">All Sources</option>
+      </select>
+      <button class="btn primary" style="margin-left:auto" onclick="pollAll()">Poll All Sources</button>
+    </div>
+    <div id="article-list" class="article-list">
+      <div class="empty-state">Loading articles…</div>
+    </div>
+  </div>
+
+  <!-- Session view -->
+  <div id="view-session" class="view">
+    <div class="stub-view">
+      <h2>Study Session</h2>
+      <div class="session-url-row">
+        <input type="url" id="session-url" placeholder="Paste article URL…" />
+        <button class="btn primary" onclick="showToast('Session functionality arrives in Stage 2.', 'info')">
+          Start Session
+        </button>
+      </div>
+      <p>Session functionality arrives in Stage 2.<br>Paste any article URL above to begin when ready.</p>
+    </div>
+  </div>
+
+  <!-- Notebook view -->
+  <div id="view-notebook" class="view">
+    <div class="stub-view">
+      <h2>I Don't Know Notebook</h2>
+      <p>The I Don't Know notebook arrives in Stage 2.</p>
+    </div>
+  </div>
+
+  <!-- Sources view -->
+  <div id="view-sources" class="view">
+    <div class="toolbar">
+      <button class="btn primary" onclick="pollAll()">Poll All Sources</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>URL</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Last Polled</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="sources-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="form-section-label"><span>Add Source</span></div>
+    <div class="add-form">
+      <span class="form-corner tl"></span>
+      <span class="form-corner tr"></span>
+      <span class="form-corner bl"></span>
+      <span class="form-corner br"></span>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Name</label>
+          <input type="text" id="new-name" placeholder="Source name" />
+        </div>
+        <div class="form-field">
+          <label>URL</label>
+          <input type="url" id="new-url" placeholder="https://…" style="min-width:260px" />
+        </div>
+        <div class="form-field">
+          <label>Type</label>
+          <select id="new-type" onchange="toggleSelectorField()">
+            <option value="rss">RSS</option>
+            <option value="scrape">Scrape</option>
+          </select>
+        </div>
+        <div class="form-field" id="selector-field">
+          <label>CSS Selector</label>
+          <input type="text" id="new-selector" placeholder="article h2 a" />
+        </div>
+        <div class="form-field" style="justify-content:flex-end">
+          <button class="btn primary" onclick="addSource()">Add Source</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast-container"></div>
+
+<script>
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+const state = {
+  sources: [],
+  articles: [],
+  unseenCount: 0,
+};
+
+// ---------------------------------------------------------------------------
+// Utility helpers
+// ---------------------------------------------------------------------------
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return iso;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// API fetch helper
+// ---------------------------------------------------------------------------
+async function apiFetch(path, options = {}) {
+  const resp = await fetch(path, options);
+  if (!resp.ok) {
+    let msg = `HTTP ${resp.status}`;
+    try {
+      const body = await resp.json();
+      msg = body.detail || body.message || msg;
+    } catch {}
+    throw new Error(msg);
+  }
+  if (resp.status === 204) return null;
+  return resp.json();
+}
+
+// ---------------------------------------------------------------------------
+// Toast — botanical leaf SVG prefix, slides in from right
+// ---------------------------------------------------------------------------
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+
+  // Leaf color and orientation per type
+  const leafColor = type === 'error' ? '#f87171' : type === 'success' ? '#4ade80' : '#c8a96e';
+  let leafPath;
+  if (type === 'success') {
+    // Upright leaf
+    leafPath = `<path d='M3 7 C1 5 1.5 2 3 1 C4.5 2 5 5 3 7' stroke='${leafColor}' stroke-width='1' fill='none' stroke-linecap='round'/>`;
+  } else if (type === 'error') {
+    // Wilted leaf, drooping down
+    leafPath = `<path d='M3 1 C5 2 5.5 4.5 4 6 C3 6.5 1.5 7 2 7' stroke='${leafColor}' stroke-width='1' fill='none' stroke-linecap='round'/>`;
+  } else {
+    // Pointing right
+    leafPath = `<path d='M1 4 C2 1.5 4.5 1 5 3 C5.5 4.5 4 6.5 2 7' stroke='${leafColor}' stroke-width='1' fill='none' stroke-linecap='round'/>`;
+  }
+
+  const leafSvg = `<svg class="toast-leaf" viewBox="0 0 6 8" width="6" height="8" fill="none"
+    xmlns="http://www.w3.org/2000/svg">${leafPath}</svg>`;
+  el.innerHTML = `${leafSvg}<span>${esc(message)}</span>`;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.3s';
+    setTimeout(() => el.remove(), 300);
+  }, 5000);
+}
+
+// ---------------------------------------------------------------------------
+// Tab navigation
+// ---------------------------------------------------------------------------
+function switchTab(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+}
+
+// ---------------------------------------------------------------------------
+// Feed badge
+// ---------------------------------------------------------------------------
+function updateFeedBadge() {
+  const badge = document.getElementById('feed-badge');
+  if (state.unseenCount > 0) {
+    badge.textContent = state.unseenCount;
+    badge.classList.add('visible');
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Open in session
+// ---------------------------------------------------------------------------
+function openInSession(url) {
+  document.getElementById('session-url').value = url;
+  switchTab('session');
+}
+
+// ---------------------------------------------------------------------------
+// Ollama status — drives flower petal color
+// ---------------------------------------------------------------------------
+async function checkOllamaStatus() {
+  const petals = document.querySelectorAll('#ollama-flower .petal');
+  const label  = document.getElementById('ollama-label');
+  try {
+    const data = await apiFetch('/api/ollama/status');
+    const color = data.ready ? '#4ade80' : '#f87171';
+    petals.forEach(p => p.setAttribute('fill', color));
+    label.textContent = data.model || 'unknown';
+  } catch {
+    petals.forEach(p => p.setAttribute('fill', '#f87171'));
+    label.textContent = 'unavailable';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sources
+// ---------------------------------------------------------------------------
+async function loadSources() {
+  try {
+    const sources = await apiFetch('/api/sources');
+    state.sources = sources;
+    renderSources();
+    populateSourceFilter();
+  } catch (err) {
+    showToast('Failed to load sources: ' + err.message, 'error');
+  }
+}
+
+function populateSourceFilter() {
+  const sel = document.getElementById('source-filter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Sources</option>';
+  state.sources.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = esc(s.name);
+    sel.appendChild(opt);
+  });
+  sel.value = current;
+}
+
+function renderSources() {
+  const tbody = document.getElementById('sources-tbody');
+  if (!state.sources.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:32px">No sources configured.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.sources.map(s => {
+    const typeBadge = s.feed_type === 'rss'
+      ? `<span class="badge badge-rss">RSS</span>`
+      : `<span class="badge badge-scrape">SCRAPE</span>`;
+    const statusBtnLabel = s.is_active ? 'Active' : 'Inactive';
+    const statusBtnStyle = s.is_active
+      ? 'color:var(--success);border-color:var(--success)'
+      : 'color:var(--muted)';
+    const lastPolled = s.last_polled_at ? fmtDate(s.last_polled_at) : 'Never';
+    return `
+      <tr>
+        <td>${esc(s.name)}</td>
+        <td class="td-url" title="${esc(s.url)}">${esc(s.url)}</td>
+        <td>${typeBadge}</td>
+        <td>
+          <button class="btn sm" style="${statusBtnStyle}"
+            onclick="toggleSourceActive(${s.id}, ${s.is_active})">
+            ${statusBtnLabel}
+          </button>
+        </td>
+        <td style="color:var(--muted);font-size:11px">${esc(lastPolled)}</td>
+        <td class="td-actions">
+          <button class="btn sm" onclick="pollSource(${s.id})">Poll</button>
+          <button class="btn sm" onclick="testSource(${s.id})">Test</button>
+          <button class="btn sm danger" onclick="deleteSource(${s.id})">Delete</button>
+          <span id="poll-result-${s.id}" class="poll-result"></span>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+async function toggleSourceActive(id, currentActive) {
+  try {
+    await apiFetch(`/api/sources/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_active: currentActive ? 0 : 1 }),
+    });
+    await loadSources();
+  } catch (err) {
+    showToast('Failed to update source: ' + err.message, 'error');
+  }
+}
+
+async function pollSource(id) {
+  const el = document.getElementById(`poll-result-${id}`);
+  if (el) el.textContent = '…';
+  try {
+    const data = await apiFetch(`/api/sources/${id}/poll`, { method: 'POST' });
+    if (el) {
+      el.className = 'poll-result';
+      el.textContent = `+${data.new_articles} new`;
+    }
+    await loadArticles();
+  } catch (err) {
+    if (el) {
+      el.className = 'poll-result error';
+      el.textContent = 'Error';
+    }
+    showToast('Poll failed: ' + err.message, 'error');
+  }
+}
+
+async function testSource(id) {
+  try {
+    const data = await apiFetch(`/api/sources/${id}/test`, { method: 'POST' });
+    showToast(`Detected ${data.detected} article(s).`, 'info');
+  } catch (err) {
+    showToast('Test failed: ' + err.message, 'error');
+  }
+}
+
+async function deleteSource(id) {
+  if (!confirm('Delete this source?')) return;
+  try {
+    await apiFetch(`/api/sources/${id}`, { method: 'DELETE' });
+    await loadSources();
+    showToast('Source deleted.', 'success');
+  } catch (err) {
+    showToast('Delete failed: ' + err.message, 'error');
+  }
+}
+
+function toggleSelectorField() {
+  const type = document.getElementById('new-type').value;
+  document.getElementById('selector-field').style.display =
+    type === 'scrape' ? 'flex' : 'none';
+}
+
+async function addSource() {
+  const name     = document.getElementById('new-name').value.trim();
+  const url      = document.getElementById('new-url').value.trim();
+  const feedType = document.getElementById('new-type').value;
+  const selector = document.getElementById('new-selector').value.trim();
+
+  if (!name) { showToast('Name is required.', 'error'); return; }
+  if (!url)  { showToast('URL is required.', 'error'); return; }
+  if (feedType === 'scrape' && !selector) {
+    showToast('CSS Selector is required for Scrape sources.', 'error');
+    return;
+  }
+
+  try {
+    await apiFetch('/api/sources', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name, url,
+        feed_type: feedType,
+        scrape_selector: feedType === 'scrape' ? selector : null,
+      }),
+    });
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-url').value  = '';
+    document.getElementById('new-selector').value = '';
+    await loadSources();
+    showToast('Source added.', 'success');
+  } catch (err) {
+    showToast('Failed to add source: ' + err.message, 'error');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Articles
+// ---------------------------------------------------------------------------
+async function loadArticles() {
+  const sourceId = document.getElementById('source-filter').value;
+  const path = sourceId ? `/api/articles?source_id=${sourceId}` : '/api/articles';
+  try {
+    const articles = await apiFetch(path);
+    state.articles = articles;
+    state.unseenCount = articles.filter(a => a.session_status === 'not_started').length;
+    updateFeedBadge();
+    renderArticles();
+  } catch (err) {
+    showToast('Failed to load articles: ' + err.message, 'error');
+  }
+}
+
+function filterArticles() {
+  loadArticles();
+}
+
+function renderArticles() {
+  const list = document.getElementById('article-list');
+  if (!state.articles.length) {
+    list.innerHTML = '<div class="empty-state">No articles found. Poll a source to get started.</div>';
+    return;
+  }
+
+  const sourceTypeMap = {};
+  state.sources.forEach(s => { sourceTypeMap[s.id] = s.feed_type; });
+
+  list.innerHTML = state.articles.map(a => {
+    const feedType = sourceTypeMap[a.source_id] || 'rss';
+    const typeBadge = feedType === 'scrape'
+      ? `<span class="badge badge-scrape">SCRAPE</span>`
+      : `<span class="badge badge-rss">RSS</span>`;
+
+    let statusBadge = '';
+    if (a.session_status === 'in_progress') {
+      statusBadge = `<span class="badge badge-ip">In Progress</span>`;
+    } else if (a.session_status === 'complete') {
+      statusBadge = `<span class="badge badge-done">Complete</span>`;
+    } else {
+      statusBadge = `<span class="badge badge-ns">Not Started</span>`;
+    }
+
+    const summary = a.summary
+      ? `<div class="card-summary">${esc(a.summary)}</div>` : '';
+
+    return `
+      <div class="article-card" onclick="openInSession(${JSON.stringify(esc(a.url))})">
+        <div class="card-top">
+          <div class="card-title">${esc(a.title || a.url)}</div>
+          ${typeBadge}
+          ${statusBadge}
+        </div>
+        <div class="card-meta">
+          <span>${esc(a.source_name || '')}</span>
+          ${a.published_date ? `<span>${fmtDate(a.published_date)}</span>` : ''}
+        </div>
+        ${summary}
+      </div>`;
+  }).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Poll all
+// ---------------------------------------------------------------------------
+async function pollAll() {
+  showToast('Polling all sources…', 'info');
+  try {
+    const data = await apiFetch('/api/poll', { method: 'POST' });
+    showToast(`Poll complete. ${data.total} new article(s).`, 'success');
+    await Promise.all([loadSources(), loadArticles()]);
+  } catch (err) {
+    showToast('Poll failed: ' + err.message, 'error');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+async function init() {
+  await Promise.all([loadSources(), loadArticles()]);
+  checkOllamaStatus();
+  setInterval(checkOllamaStatus, 30000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
