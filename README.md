@@ -4,6 +4,12 @@ Local Linux CTI learning tool — Socratic sessions, voice
 interaction, and an I Don't Know notebook. Powered entirely
 by local AI via Ollama. No API keys. No accounts. No cloud.
 
+> **Status: in development.**
+> Session 1 complete — Docker infrastructure and Ollama client
+> are in place. Application logic is not yet built. The stack
+> will not run until a later session adds `main.py` and the
+> remaining backend modules.
+
 ## Quick start
 
     git clone https://github.com/grimmsgadgets-cmyk/BrainCache
