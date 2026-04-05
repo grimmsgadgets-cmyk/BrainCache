@@ -13,6 +13,8 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 import yaml
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -62,7 +64,27 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_event_loop()
     loop.run_in_executor(None, ollama_client.pull_model_if_needed)
     logger.info("BrainCache startup complete — DB: %s", DB_PATH)
+
+    scheduler = AsyncIOScheduler()
+    poll_hours = int(_CONFIG.get("poll_interval_hours", 6))
+    scheduler.add_job(
+        scheduled_poll,
+        trigger=IntervalTrigger(hours=poll_hours),
+        id="poll_all_sources",
+        name="Poll all active sources",
+        replace_existing=True,
+    )
+    scheduler.start()
+    logger.info(
+        "Scheduler started — polling every %d hours",
+        poll_hours
+    )
+    app.state.scheduler = scheduler
+
     yield
+
+    scheduler.shutdown(wait=False)
+    logger.info("Scheduler stopped")
 
 
 # ---------------------------------------------------------------------------
@@ -71,6 +93,94 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="BrainCache", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+# ---------------------------------------------------------------------------
+# WebSocket connection manager
+# ---------------------------------------------------------------------------
+
+class ConnectionManager:
+    def __init__(self):
+        self.active: list[WebSocket] = []
+
+    async def connect(self, ws: WebSocket):
+        await ws.accept()
+        self.active.append(ws)
+
+    def disconnect(self, ws: WebSocket):
+        if ws in self.active:
+            self.active.remove(ws)
+
+    async def broadcast(self, message: dict):
+        """Send JSON message to all connected clients.
+        Remove dead connections silently."""
+        disconnected = []
+        for ws in self.active:
+            try:
+                await ws.send_json(message)
+            except Exception:
+                disconnected.append(ws)
+        for ws in disconnected:
+            self.disconnect(ws)
+
+
+notification_manager = ConnectionManager()
+
+
+# ---------------------------------------------------------------------------
+# Scheduled poll
+# ---------------------------------------------------------------------------
+
+async def scheduled_poll():
+    """
+    Called by APScheduler on the configured interval.
+    Polls all active sources. Broadcasts new article
+    counts to connected clients. Announces via TTS
+    if available.
+    """
+    logger.info("Scheduler: starting scheduled poll")
+    try:
+        results = await asyncio.get_event_loop().run_in_executor(
+            None, scraper.poll_all_sources, DB_PATH
+        )
+        total = sum(results.values())
+        new_by_source = {k: v for k, v in results.items() if v > 0}
+
+        if total > 0:
+            logger.info(
+                "Scheduler: %d new articles found — %s",
+                total, new_by_source
+            )
+
+            # Broadcast to all connected browser clients
+            await notification_manager.broadcast({
+                "type": "new_articles",
+                "total": total,
+                "by_source": new_by_source
+            })
+
+            # Announce via Piper TTS (non-blocking)
+            sources_text = ", ".join(
+                f"{count} from {name}"
+                for name, count in new_by_source.items()
+            )
+            announcement = (
+                f"New articles available: {sources_text}."
+            )
+            asyncio.create_task(
+                asyncio.get_event_loop().run_in_executor(
+                    None, tts.speak, announcement, _CONFIG
+                )
+            )
+        else:
+            logger.info("Scheduler: no new articles found")
+
+    except Exception as exc:
+        logger.exception("Scheduler: poll failed — %s", exc)
+        await notification_manager.broadcast({
+            "type": "poll_error",
+            "message": str(exc)
+        })
 
 
 @app.get("/")
@@ -189,6 +299,13 @@ async def api_get_articles(source_id: Optional[int] = None):
 async def api_poll_all():
     counts = scraper.poll_all_sources(DB_PATH)
     total = sum(counts.values())
+    new_by_source = {k: v for k, v in counts.items() if v > 0}
+    if total > 0:
+        await notification_manager.broadcast({
+            "type": "new_articles",
+            "total": total,
+            "by_source": new_by_source
+        })
     return {"total": total, "sources": counts}
 
 
@@ -390,6 +507,57 @@ async def ws_session(websocket: WebSocket):
             await websocket.send_json({"type": "error", "message": str(exc)})
         except Exception:
             pass
+
+
+# ---------------------------------------------------------------------------
+# WebSocket — Notifications broadcast
+# ---------------------------------------------------------------------------
+
+@app.websocket("/ws/notifications")
+async def notifications_ws(websocket: WebSocket):
+    await notification_manager.connect(websocket)
+    try:
+        while True:
+            # Keep connection alive — receive and discard
+            # any client messages (heartbeats etc)
+            try:
+                await asyncio.wait_for(
+                    websocket.receive_text(),
+                    timeout=30
+                )
+            except asyncio.TimeoutError:
+                # Normal — just means no message in 30s, loop again
+                pass
+    except WebSocketDisconnect:
+        notification_manager.disconnect(websocket)
+    except Exception:
+        notification_manager.disconnect(websocket)
+
+
+# ---------------------------------------------------------------------------
+# Routes — Scheduler status
+# ---------------------------------------------------------------------------
+
+@app.get("/api/scheduler/status")
+async def scheduler_status():
+    sched = getattr(app.state, "scheduler", None)
+    if not sched:
+        return {"running": False, "jobs": []}
+
+    jobs = []
+    for job in sched.get_jobs():
+        next_run = job.next_run_time
+        jobs.append({
+            "id": job.id,
+            "name": job.name,
+            "next_run": next_run.isoformat() if next_run else None,
+        })
+
+    return {
+        "running": sched.running,
+        "poll_interval_hours": _CONFIG.get("poll_interval_hours", 6),
+        "jobs": jobs
+    }
 
 
 # ---------------------------------------------------------------------------

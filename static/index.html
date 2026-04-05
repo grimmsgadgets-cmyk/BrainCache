@@ -1524,6 +1524,77 @@
     }
 
     .voice-edit-link:hover { color: var(--accent); }
+
+    /* ================================================================
+       SCHEDULER STATUS BAR
+       ================================================================ */
+    .scheduler-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface3);
+      padding: 8px 16px;
+      margin-bottom: 16px;
+      border-top: 1px solid var(--gold-line);
+      border-bottom: 1px solid var(--gold-line);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='4' viewBox='0 0 48 4'%3E%3Cpath d='M0 3 C6 1.5 12 3.5 18 2 C24 0.5 30 3 36 1.5 C42 0 46 2.5 48 2.5' stroke='%236b5a35' stroke-width='0.55' fill='none'/%3E%3C/svg%3E"),
+                        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='4' viewBox='0 0 48 4'%3E%3Cpath d='M0 1 C6 2.5 12 0.5 18 2 C24 3.5 30 1 36 2.5 C42 4 46 1.5 48 1.5' stroke='%236b5a35' stroke-width='0.55' fill='none'/%3E%3C/svg%3E");
+      background-repeat: repeat-x, repeat-x;
+      background-position: top center, bottom center;
+      background-size: 48px 4px, 48px 4px;
+    }
+
+    .scheduler-status-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .scheduler-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .scheduler-value {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text);
+    }
+
+    /* ================================================================
+       SOURCE ERROR INDICATOR + TOOLTIP
+       ================================================================ */
+    .src-error-indicator {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 6px;
+      position: relative;
+      cursor: default;
+    }
+
+    .src-error-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface2);
+      border: 1px solid var(--gold-line);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 2px;
+      white-space: pre-wrap;
+      max-width: 280px;
+      z-index: 50;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .src-error-indicator:hover .src-error-tooltip {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -1846,6 +1917,21 @@
     <div class="toolbar">
       <button class="btn primary" onclick="pollAll()">Poll All Sources</button>
     </div>
+
+    <!-- Scheduler status bar -->
+    <div id="scheduler-status-bar" class="scheduler-status-bar">
+      <div class="scheduler-status-left">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+          <circle cx="7" cy="7" r="5.5" stroke="var(--accent-dim)" stroke-width="1"/>
+          <line x1="7" y1="3.5" x2="7" y2="7" stroke="var(--accent-dim)" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="7" y1="7" x2="9.5" y2="8.5" stroke="var(--accent-dim)" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        <span class="scheduler-label">Next scheduled poll:</span>
+        <span id="scheduler-next-run" class="scheduler-value">Loading…</span>
+      </div>
+      <span id="scheduler-interval" class="scheduler-label"></span>
+    </div>
+
     <div class="table-wrap">
       <table>
         <thead>
@@ -2047,12 +2133,42 @@ async function checkOllamaStatus() {
 // ---------------------------------------------------------------------------
 // Sources
 // ---------------------------------------------------------------------------
+async function loadSchedulerStatus() {
+  const bar = document.getElementById('scheduler-status-bar');
+  const nextRunEl = document.getElementById('scheduler-next-run');
+  const intervalEl = document.getElementById('scheduler-interval');
+  if (!bar) return;
+  try {
+    const data = await apiFetch('/api/scheduler/status');
+    if (!data.running) {
+      nextRunEl.textContent = 'Scheduler not running';
+      nextRunEl.style.color = 'var(--warn)';
+      if (intervalEl) intervalEl.textContent = '';
+      return;
+    }
+    nextRunEl.style.color = 'var(--text)';
+    const job = (data.jobs || []).find(j => j.id === 'poll_all_sources');
+    if (job && job.next_run) {
+      const d = new Date(job.next_run);
+      nextRunEl.textContent = d.toLocaleString();
+    } else {
+      nextRunEl.textContent = '—';
+    }
+    if (intervalEl) {
+      intervalEl.textContent = `Poll interval: ${data.poll_interval_hours}h`;
+    }
+  } catch {
+    nextRunEl.textContent = '—';
+  }
+}
+
 async function loadSources() {
   try {
     const sources = await apiFetch('/api/sources');
     state.sources = sources;
     renderSources();
     populateSourceFilter();
+    loadSchedulerStatus();
   } catch (err) {
     showToast('Failed to load sources: ' + err.message, 'error');
   }
@@ -2086,6 +2202,16 @@ function renderSources() {
       ? 'color:var(--success);border-color:var(--success)'
       : 'color:var(--muted)';
     const lastPolled = s.last_polled_at ? fmtDate(s.last_polled_at) : 'Never';
+    const errorIndicator = s.last_error
+      ? `<span class="src-error-indicator" title="${esc(s.last_error)}">
+           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+             <path d="M6 1L11 10H1L6 1Z" stroke="#fbbf24" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+             <line x1="6" y1="5" x2="6" y2="7.5" stroke="#fbbf24" stroke-width="1.1" stroke-linecap="round"/>
+             <circle cx="6" cy="9" r="0.65" fill="#fbbf24"/>
+           </svg>
+           <span class="src-error-tooltip">${esc(s.last_error)}</span>
+         </span>`
+      : '';
     return `
       <tr>
         <td>${esc(s.name)}</td>
@@ -2097,7 +2223,9 @@ function renderSources() {
             ${statusBtnLabel}
           </button>
         </td>
-        <td style="color:var(--muted);font-size:11px">${esc(lastPolled)}</td>
+        <td style="color:var(--muted);font-size:11px">
+          ${esc(lastPolled)}${errorIndicator}
+        </td>
         <td class="td-actions">
           <button class="btn sm" onclick="pollSource(${s.id})">Poll</button>
           <button class="btn sm" onclick="testSource(${s.id})">Test</button>
@@ -2281,12 +2409,92 @@ async function pollAll() {
 // ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Notifications WebSocket
+// ---------------------------------------------------------------------------
+let notificationWs = null
+let notificationReconnectTimer = null
+
+function connectNotifications() {
+  if (notificationWs &&
+      notificationWs.readyState === WebSocket.OPEN) {
+    return
+  }
+
+  notificationWs = new WebSocket(
+    'ws://' + location.host + '/ws/notifications'
+  )
+
+  notificationWs.onopen = () => {
+    clearTimeout(notificationReconnectTimer)
+    // Send periodic heartbeat to keep connection alive
+    setInterval(() => {
+      if (notificationWs.readyState === WebSocket.OPEN) {
+        notificationWs.send('ping')
+      }
+    }, 25000)
+  }
+
+  notificationWs.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data)
+      handleNotification(msg)
+    } catch (_) {}
+  }
+
+  notificationWs.onclose = () => {
+    // Reconnect after 5 seconds
+    notificationReconnectTimer = setTimeout(
+      connectNotifications, 5000
+    )
+  }
+
+  notificationWs.onerror = () => {
+    notificationWs.close()
+  }
+}
+
+function handleNotification(msg) {
+  if (msg.type === 'new_articles') {
+    // Update unseen count
+    state.unseenCount = (state.unseenCount || 0)
+                        + msg.total
+    updateFeedBadge()
+
+    // Reload articles silently if Feed tab is active
+    const feedActive = document.getElementById('view-feed')
+      ?.classList.contains('active')
+    if (feedActive) {
+      loadArticles()
+    }
+
+    // Show Art Nouveau styled toast
+    const sourceLines = Object.entries(msg.by_source)
+      .map(([name, count]) =>
+        `${count} new — ${name}`)
+      .join('\n')
+    showToast(
+      `${msg.total} new article${msg.total !== 1
+        ? 's' : ''} found\n${sourceLines}`,
+      'success'
+    )
+  }
+
+  if (msg.type === 'poll_error') {
+    showToast(
+      `Scheduled poll error: ${msg.message}`,
+      'error'
+    )
+  }
+}
+
 async function init() {
   await Promise.all([loadSources(), loadArticles()]);
   checkOllamaStatus();
   checkVoiceStatus();
   setInterval(checkOllamaStatus, 30000);
   setInterval(checkVoiceStatus, 30000);
+  connectNotifications();
 }
 
 document.addEventListener('DOMContentLoaded', init);
