@@ -1,16 +1,12 @@
-version: "3.9"
-
 services:
 
   ollama:
     image: ollama/ollama:latest
     volumes:
       - ollama-data:/root/.ollama
-    ports:
-      - "11434:11434"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      test: ["CMD", "sh", "-c", "ollama list > /dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 5

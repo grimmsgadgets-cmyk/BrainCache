@@ -22,7 +22,7 @@ RUN curl -L -o /opt/piper/voices/en_US-lessac-medium.onnx.json \
 FROM debian:bookworm-slim AS whisper-builder
 
 RUN apt-get update && apt-get install -y \
-    git build-essential curl \
+    git build-essential cmake curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN git clone https://github.com/ggerganov/whisper.cpp /opt/whisper-src
@@ -32,7 +32,7 @@ WORKDIR /opt/whisper-src
 RUN make -j$(nproc)
 
 RUN mkdir -p /opt/whisper/models \
-    && cp main /opt/whisper/main
+    && cp build/bin/main /opt/whisper/main
 
 RUN bash ./models/download-ggml-model.sh base.en \
     && cp models/ggml-base.en.bin /opt/whisper/models/

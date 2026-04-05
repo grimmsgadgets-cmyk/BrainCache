@@ -28,3 +28,6 @@ websockets==14.1
 
 # Pydantic (pinned for FastAPI compatibility)
 pydantic==2.10.3
+
+# Required for FastAPI file/form uploads
+python-multipart==0.0.20
