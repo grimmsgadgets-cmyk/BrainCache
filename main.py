@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 import yaml
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -19,6 +19,8 @@ from pydantic import BaseModel
 import db
 import scraper
 import ollama_client
+import session as session_module
+import notebook as notebook_module
 
 logging.basicConfig(
     level=logging.INFO,
@@ -89,6 +91,15 @@ class SourceUpdate(BaseModel):
     feed_type: Optional[str] = None
     scrape_selector: Optional[str] = None
     is_active: Optional[int] = None
+
+
+class NotebookCreate(BaseModel):
+    term: str
+    source_article_url: Optional[str] = None
+
+
+class NotebookResolve(BaseModel):
+    is_resolved: bool
 
 
 # ---------------------------------------------------------------------------
@@ -189,3 +200,150 @@ async def api_ollama_status():
         "model": ollama_client.OLLAMA_MODEL,
         "host": ollama_client.OLLAMA_HOST,
     }
+
+
+# ---------------------------------------------------------------------------
+# WebSocket — Feynman session
+# ---------------------------------------------------------------------------
+
+@app.websocket("/ws/session")
+async def ws_session(websocket: WebSocket):
+    await websocket.accept()
+
+    try:
+        # Wait for start message
+        msg = await websocket.receive_json()
+        if msg.get("type") != "start":
+            await websocket.send_json({"type": "error", "message": "Expected start message"})
+            return
+        url = (msg.get("url") or "").strip()
+        if not url:
+            await websocket.send_json({"type": "error", "message": "URL is required"})
+            return
+
+        # 1. Fetch article full text
+        await websocket.send_json({"type": "status", "message": "Fetching article..."})
+        full_text = await asyncio.to_thread(scraper.fetch_full_article_text, url)
+
+        # 3. Update full_text in DB
+        await asyncio.to_thread(db.update_article_full_text, DB_PATH, url, full_text)
+        # 4. Mark in_progress
+        await asyncio.to_thread(db.update_article_session_status, DB_PATH, url, "in_progress")
+
+        # 5. Get article metadata
+        article = await asyncio.to_thread(db.get_article_by_url, DB_PATH, url)
+        title = (article.get("title") or url) if article else url
+        summary = (article.get("summary") or "") if article else ""
+
+        # 6-7. Generate pre-read prompt
+        await websocket.send_json({"type": "status", "message": "Generating pre-read prompt..."})
+        pre_read = await asyncio.to_thread(
+            session_module.generate_pre_read_prompt, title, summary
+        )
+        hypothesis_question = pre_read.get("hypothesis_question", "")
+        unknown_terms = pre_read.get("unknown_terms", [])
+
+        # 8. Send pre-read phase
+        await websocket.send_json({
+            "type": "phase",
+            "phase": "pre",
+            "prompt": hypothesis_question,
+        })
+
+        # 9. Wait for pre-read response
+        pre_msg = await websocket.receive_json()
+
+        # 10. Log response
+        await asyncio.to_thread(
+            db.insert_session_log,
+            DB_PATH, url, "pre", hypothesis_question,
+            pre_msg.get("text", ""),
+        )
+
+        # 11-13. Generate notebook entries for unknown terms
+        await websocket.send_json({"type": "status", "message": "Generating notebook entries..."})
+        notebook_entries = []
+        for term in unknown_terms:
+            entry = await asyncio.to_thread(
+                notebook_module.generate_notebook_entry, DB_PATH, term, url
+            )
+            notebook_entries.append(entry)
+        await websocket.send_json({"type": "terms", "entries": notebook_entries})
+
+        # 14-15. Generate Socratic questions
+        await websocket.send_json({"type": "status", "message": "Generating Socratic questions..."})
+        questions = await asyncio.to_thread(
+            session_module.generate_socratic_questions, full_text
+        )
+
+        # 16. Send each question, wait for response, log
+        for i, question in enumerate(questions):
+            await websocket.send_json({
+                "type": "question",
+                "index": i,
+                "total": len(questions),
+                "text": question,
+            })
+            q_msg = await websocket.receive_json()
+            await asyncio.to_thread(
+                db.insert_session_log,
+                DB_PATH, url, f"post_{i}", question,
+                q_msg.get("text", ""),
+            )
+
+        # 17-20. Generate and send summary
+        await websocket.send_json({"type": "status", "message": "Generating session summary..."})
+        all_logs = await asyncio.to_thread(db.get_session_logs_by_article, DB_PATH, url)
+        summary_data = await asyncio.to_thread(
+            session_module.generate_session_summary, url, all_logs
+        )
+        await websocket.send_json({"type": "summary", "data": summary_data})
+
+        # 21-22. Mark complete
+        await asyncio.to_thread(db.update_article_session_status, DB_PATH, url, "complete")
+        await websocket.send_json({"type": "complete"})
+
+    except WebSocketDisconnect:
+        logger.info("WebSocket client disconnected from session")
+    except Exception as exc:
+        logger.error("Session WebSocket error: %s", exc)
+        try:
+            await websocket.send_json({"type": "error", "message": str(exc)})
+        except Exception:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# Routes — Notebook
+# ---------------------------------------------------------------------------
+
+@app.post("/api/notebook", status_code=200)
+async def api_create_notebook_entry(body: NotebookCreate):
+    term = body.term.strip()
+    if not term:
+        raise HTTPException(status_code=400, detail="term is required")
+    entry = await asyncio.to_thread(
+        notebook_module.generate_notebook_entry,
+        DB_PATH, term, body.source_article_url,
+    )
+    return entry
+
+
+@app.get("/api/notebook")
+async def api_get_notebook():
+    return db.get_all_notebook_entries(DB_PATH)
+
+
+@app.put("/api/notebook/{entry_id}/resolve")
+async def api_resolve_notebook_entry(entry_id: int, body: NotebookResolve):
+    entry = db.update_notebook_entry_resolved(DB_PATH, entry_id, body.is_resolved)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return entry
+
+
+@app.delete("/api/notebook/{entry_id}", status_code=204)
+async def api_delete_notebook_entry(entry_id: int):
+    deleted = db.delete_notebook_entry(DB_PATH, entry_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Entry not found")

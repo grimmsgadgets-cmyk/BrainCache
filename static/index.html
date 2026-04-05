@@ -12,11 +12,11 @@
        VARIABLES
        ================================================================ */
     :root {
-      --bg:         #0d0f12;
-      --surface:    #13161b;
-      --surface2:   #1a1e25;
-      --surface3:   #0f1218;
-      --border:     #22272f;
+      --bg:         #0d0b09;
+      --surface:    #141210;
+      --surface2:   #1c1915;
+      --surface3:   #100e0b;
+      --border:     #252018;
       --accent:     #c8a96e;
       --accent-dim: #8a7245;
       --gold-line:  #6b5a35;
@@ -56,6 +56,37 @@
       flex-direction: column;
     }
 
+    /* Parchment noise overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9995;
+      opacity: 0.028;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+    }
+
+    /* Page border: inset shadow + corner vignette */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9996;
+      box-shadow:
+        inset 0 0 0 1px rgba(107, 90, 53, 0.16),
+        inset 0 0 0 3px rgba(107, 90, 53, 0.05),
+        inset 0 0 60px rgba(13, 11, 9, 0.35);
+    }
+
+    /* Font features: ligatures, old-style numerals, kerning */
+    .logo, .card-title, .session-prompt-text, .session-complete-heading,
+    .notebook-heading, .nb-card-term, .term-card-name, .stub-view h2 {
+      font-feature-settings: "liga" 1, "kern" 1, "onum" 1;
+    }
+
     /* ================================================================
        HEADER
        ================================================================ */
@@ -70,15 +101,15 @@
       z-index: 100;
     }
 
-    /* Vine motif bottom border — wavy line with dot nodes, 32px tile */
+    /* 3-layer botanical frieze — 48px tile with vine, leaf pairs, and buds */
     header::after {
       content: '';
       position: absolute;
       bottom: 0; left: 0; right: 0;
-      height: 5px;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='5' viewBox='0 0 32 5'%3E%3Cpath d='M0 3 C4 1 8 4 12 2.5 C16 1 20 4 24 2.5 C28 1 30 3 32 3' stroke='%236b5a35' stroke-width='0.75' fill='none'/%3E%3Ccircle cx='8' cy='3' r='0.9' fill='%236b5a35'/%3E%3Ccircle cx='24' cy='2.5' r='0.9' fill='%236b5a35'/%3E%3C/svg%3E");
+      height: 9px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='9' viewBox='0 0 48 9'%3E%3Cpath d='M0 6 C4 4.5 8 7 12 6 C16 5 20 7.5 24 6 C28 4.5 32 7 36 6 C40 5 44 7.5 48 6' stroke='%23352c1a' stroke-width='0.5' fill='none'/%3E%3Cpath d='M0 6 C6 3 12 7 18 4 C24 1.5 30 6 36 3.5 C42 1 46 5 48 5' stroke='%236b5a35' stroke-width='0.9' fill='none'/%3E%3Cpath d='M18 4 C16 2.5 15 1 17 0.3' stroke='%236b5a35' stroke-width='0.65' fill='none' stroke-linecap='round'/%3E%3Cpath d='M18 4 C20 2.5 21 1 19 0.3' stroke='%236b5a35' stroke-width='0.65' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='18' cy='0.4' r='0.9' fill='%236b5a35'/%3E%3Cpath d='M36 3.5 C34 2 33 0.5 35 -0.2' stroke='%236b5a35' stroke-width='0.65' fill='none' stroke-linecap='round'/%3E%3Cpath d='M36 3.5 C38 2 39 0.5 37 -0.2' stroke='%236b5a35' stroke-width='0.65' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='36' cy='-0.1' r='0.8' fill='%236b5a35'/%3E%3Ccircle cx='12' cy='6.8' r='1' fill='%236b5a35'/%3E%3Ccircle cx='30' cy='6.2' r='1' fill='%236b5a35'/%3E%3C/svg%3E");
       background-repeat: repeat-x;
-      background-size: 32px 5px;
+      background-size: 48px 9px;
     }
 
     /* Logo group: botanical mark + wordmark */
@@ -213,7 +244,14 @@
     }
 
     .view { display: none; }
-    .view.active { display: block; }
+    @keyframes viewEnter {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .view.active {
+      display: block;
+      animation: viewEnter 0.14s ease forwards;
+    }
 
     /* ================================================================
        TOOLBAR
@@ -690,9 +728,619 @@
       from { transform: translateX(40px); opacity: 0; }
       to   { transform: translateX(0);    opacity: 1; }
     }
+
+    /* ================================================================
+       SESSION VIEW — Stage 2
+       ================================================================ */
+    .session-view-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding-top: 8px;
+    }
+    .session-input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+      align-items: flex-end;
+    }
+    .session-input-row input[type="url"] { flex: 1; font-size: 13px; }
+    .session-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    /* Phase indicator */
+    .phase-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 0 4px;
+    }
+    .phase-dot-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    .phase-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      border: 1px solid var(--gold-line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.3s, background 0.3s;
+    }
+    .phase-dot.active  { border-color: var(--accent);  background: var(--accent); }
+    .phase-dot.done    { border-color: var(--success); background: var(--success); }
+    .phase-dot-inner {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: transparent;
+      transition: background 0.3s;
+    }
+    .phase-dot.active .phase-dot-inner { background: var(--bg); }
+    .phase-dot.done .phase-dot-inner   { background: var(--bg); }
+    .phase-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+    .phase-connector {
+      flex: 1;
+      max-width: 80px;
+      margin-bottom: 16px;
+      opacity: 0.7;
+    }
+
+    /* Status */
+    .session-status {
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      min-height: 18px;
+    }
+    @keyframes pulse-opacity {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+    .session-status.loading { animation: pulse-opacity 1.2s ease-in-out infinite; }
+
+    /* Prompt frame */
+    .session-question-counter {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .session-prompt-frame {
+      position: relative;
+      padding: 28px 52px;
+      text-align: center;
+    }
+    .prompt-arch {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    .session-prompt-text {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 400;
+      line-height: 1.55;
+      color: var(--text);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Response area */
+    .session-response-area {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .session-textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--accent-dim);
+      border-radius: 0;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 10px 4px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .session-textarea:focus {
+      border-bottom-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(200, 169, 110, 0.12);
+    }
+    .session-response-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .session-shortcut-hint {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      opacity: 0.65;
+    }
+
+    /* Terms panel */
+    .session-terms-panel {
+      border-top: 1px solid var(--border);
+      padding-top: 18px;
+    }
+    .session-terms-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .session-terms-list { display: flex; flex-direction: column; gap: 8px; }
+    .session-term-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 11px 14px;
+      position: relative;
+    }
+    .session-term-card::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px;
+      width: 10px; height: 10px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 8 C2 4.5 4.5 2 8 2' stroke='%236b5a35' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+    }
+    .session-term-card::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; right: -1px;
+      width: 10px; height: 10px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M8 2 C8 5.5 5.5 8 2 8' stroke='%236b5a35' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+    }
+    .term-card-name {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--accent);
+      margin-bottom: 3px;
+    }
+    .term-card-explanation { font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .term-card-mitre {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--info);
+      border: 1px solid rgba(96,165,250,0.3);
+      border-radius: 2px;
+      padding: 1px 6px;
+      margin-top: 5px;
+    }
+
+    /* Summary panel */
+    .session-summary-panel {
+      background: var(--surface);
+      border: 1px solid var(--gold-line);
+      border-radius: 2px;
+      padding: 26px 28px;
+      position: relative;
+    }
+    .session-complete-heading {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 500;
+      color: var(--accent);
+      text-align: center;
+      margin-bottom: 22px;
+      letter-spacing: 0.04em;
+    }
+    .session-summary-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 640px) {
+      .session-summary-cols { grid-template-columns: 1fr; }
+    }
+    .summary-col { display: flex; flex-direction: column; gap: 8px; }
+    .summary-col-header {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4px;
+    }
+    .summary-col-strong .summary-col-header { color: var(--success); border-bottom-color: rgba(74,222,128,0.25); }
+    .summary-col-gaps .summary-col-header   { color: var(--warn);    border-bottom-color: rgba(251,191,36,0.25); }
+    .summary-col-study .summary-col-header  { color: var(--muted); }
+    .summary-col ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .summary-col ul li {
+      font-size: 12px;
+      line-height: 1.55;
+      padding-left: 14px;
+      position: relative;
+    }
+    .summary-col ul li::before {
+      content: '◆';
+      position: absolute;
+      left: 0;
+      font-size: 5px;
+      top: 5px;
+    }
+    .summary-col-strong ul li::before { color: var(--success); }
+    .summary-col-gaps ul li::before   { color: var(--warn); }
+    .summary-col-study ul li::before  { color: var(--muted); }
+
+    /* ================================================================
+       NOTEBOOK VIEW — Stage 2
+       ================================================================ */
+    .notebook-view-inner { max-width: 1040px; margin: 0 auto; }
+    .notebook-header-row {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .notebook-heading {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--accent);
+    }
+    .notebook-stats {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .notebook-add-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 22px;
+      align-items: flex-end;
+    }
+    .notebook-add-row input { flex: 1; max-width: 400px; }
+    .notebook-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+    @media (max-width: 640px) {
+      .notebook-columns { grid-template-columns: 1fr; }
+    }
+    .notebook-col-header {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='5' viewBox='0 0 32 5'%3E%3Cpath d='M0 3 C4 1 8 4 12 2.5 C16 1 20 4 24 2.5 C28 1 30 3 32 3' stroke='%236b5a35' stroke-width='0.75' fill='none'/%3E%3Ccircle cx='8' cy='3' r='0.85' fill='%236b5a35'/%3E%3Ccircle cx='24' cy='2.5' r='0.85' fill='%236b5a35'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-position: left bottom;
+      background-size: 32px 5px;
+    }
+    .notebook-card-list { display: flex; flex-direction: column; gap: 12px; }
+    .notebook-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 14px 16px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.2s;
+    }
+    .notebook-card::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px;
+      width: 12px; height: 12px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 10 C2 5.5 5.5 2 10 2' stroke='%236b5a35' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M2 6.5 C1.5 4 2.5 2 4.5 2' stroke='%236b5a35' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+    }
+    .notebook-card::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; right: -1px;
+      width: 12px; height: 12px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M10 2 C10 6.5 6.5 10 2 10' stroke='%236b5a35' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M10 5.5 C10.5 8 9.5 10 7.5 10' stroke='%236b5a35' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+    }
+    .notebook-card.resolved {
+      opacity: 0.6;
+    }
+    .notebook-card.resolved::before {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 10 C2 5.5 5.5 2 10 2' stroke='%23453e2e' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M2 6.5 C1.5 4 2.5 2 4.5 2' stroke='%23453e2e' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+    .notebook-card.resolved::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M10 2 C10 6.5 6.5 10 2 10' stroke='%23453e2e' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M10 5.5 C10.5 8 9.5 10 7.5 10' stroke='%23453e2e' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+    .nb-card-term {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--accent);
+    }
+    .notebook-card.resolved .nb-card-term {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+    .card-field-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 3px;
+      opacity: 0.7;
+    }
+    .nb-card-hypothesis { font-style: italic; font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .nb-card-explanation { font-size: 13px; color: var(--text); line-height: 1.6; }
+    .nb-card-mitre {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--info);
+      border: 1px solid rgba(96,165,250,0.3);
+      border-radius: 2px;
+      padding: 1px 7px;
+      margin-top: 2px;
+    }
+    .questions-toggle {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+    }
+    .card-questions-list {
+      list-style: none;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .card-questions-list.collapsed { display: none; }
+    .card-questions-list li {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+      padding-left: 18px;
+      position: relative;
+    }
+    .card-questions-list li::before {
+      content: attr(data-num);
+      position: absolute;
+      left: 0;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--accent-dim);
+      top: 1px;
+    }
+    .nb-card-resolution { font-style: italic; font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .nb-card-resolved-at {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      opacity: 0.55;
+    }
+    .nb-card-actions { display: flex; gap: 6px; margin-top: 2px; }
+    .btn.ghost-success:hover { color: var(--success); border-color: var(--success); }
+    .notebook-empty {
+      position: relative;
+      text-align: center;
+      color: var(--muted);
+      padding: 46px 20px;
+      font-size: 13px;
+    }
+    .notebook-empty::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 220px;
+      height: 90px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='90' viewBox='0 0 220 90' fill='none'%3E%3Cpath d='M16 84 L16 44 Q16 7 110 7 Q204 7 204 44 L204 84 L16 84 Z' stroke='%236b5a35' stroke-width='1' fill='none'/%3E%3Ccircle cx='110' cy='7' r='2' fill='%236b5a35'/%3E%3Cpath d='M96 7 C102 3 106 2 110 2 C114 2 118 3 124 7' stroke='%236b5a35' stroke-width='0.75' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      pointer-events: none;
+    }
+    .notebook-empty > * { position: relative; z-index: 1; }
+
+    /* ================================================================
+       PAGE CORNER ORNAMENTS
+       ================================================================ */
+    #page-corners {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9094;
+    }
+    #page-corners span {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      opacity: 0.22;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44' fill='none'%3E%3Cpath d='M0 10 C8 7 18 11 26 9 C33 7 40 11 44 10' stroke='%236b5a35' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M10 0 C7 8 11 18 9 26 C7 33 11 40 10 44' stroke='%236b5a35' stroke-width='1.1' stroke-linecap='round'/%3E%3Ccircle cx='10' cy='10' r='2.5' fill='%236b5a35'/%3E%3Cpath d='M10 10 C7 7 5 4 7 2.5' stroke='%236b5a35' stroke-width='0.8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M10 10 C7 7 4 5 2.5 7' stroke='%236b5a35' stroke-width='0.8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M22 9 C21 7 21 5 22.5 4 C24 5 24 7.5 22 9' stroke='%236b5a35' stroke-width='0.7' fill='none' stroke-linecap='round'/%3E%3Cpath d='M9 22 C7 21 5 21 4 22.5 C5 24 7.5 24 9 22' stroke='%236b5a35' stroke-width='0.7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-size: 44px 44px;
+    }
+    #page-corners span:nth-child(1) { top: 4px;    left: 4px; }
+    #page-corners span:nth-child(2) { top: 4px;    right: 4px;  transform: scaleX(-1); }
+    #page-corners span:nth-child(3) { bottom: 4px; left: 4px;   transform: scaleY(-1); }
+    #page-corners span:nth-child(4) { bottom: 4px; right: 4px;  transform: scale(-1); }
+
+    /* ================================================================
+       BINDING SPINE
+       ================================================================ */
+    #spine {
+      position: fixed;
+      top: 52px; bottom: 0;
+      left: 0;
+      width: 10px;
+      pointer-events: none;
+      z-index: 9093;
+      opacity: 0.28;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='20' viewBox='0 0 10 20'%3E%3Cline x1='5' y1='0' x2='5' y2='20' stroke='%236b5a35' stroke-width='0.5'/%3E%3Ccircle cx='5' cy='3.5' r='1.3' fill='%236b5a35'/%3E%3Cpath d='M5 7 C2 6 1 4.5 2.5 3.5' stroke='%236b5a35' stroke-width='0.7' fill='none' stroke-linecap='round'/%3E%3Cpath d='M5 7 C8 6 9 4.5 7.5 3.5' stroke='%236b5a35' stroke-width='0.7' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='5' cy='16' r='0.9' fill='%236b5a35' opacity='0.6'/%3E%3C/svg%3E");
+      background-repeat: repeat-y;
+      background-size: 10px 20px;
+    }
+
+    /* ================================================================
+       PHASE INDICATOR — bookmark ribbons
+       ================================================================ */
+    .phase-dot {
+      width: 22px;
+      height: 30px;
+      clip-path: polygon(0 0, 100% 0, 100% 76%, 50% 100%, 0 76%);
+      background: rgba(107, 90, 53, 0.12);
+      border: none;
+      border-radius: 0;
+      transition: background 0.3s, transform 0.3s;
+      display: block;
+    }
+    .phase-dot.active {
+      background: var(--accent);
+      transform: translateY(5px);
+    }
+    .phase-dot.done {
+      background: rgba(74, 222, 128, 0.22);
+    }
+    .phase-dot-inner { display: none; }
+    .phase-dot-group { gap: 8px; }
+    .phase-label { margin-top: 2px; }
+
+    /* ================================================================
+       SESSION PROMPT — DROP CAP
+       ================================================================ */
+    .session-prompt-text::first-letter {
+      font-family: var(--font-display);
+      font-size: 3.1em;
+      font-weight: 500;
+      color: var(--accent);
+      float: left;
+      line-height: 0.82;
+      margin-right: 5px;
+      margin-top: 4px;
+      font-feature-settings: "liga" 1, "kern" 1;
+    }
+
+    /* ================================================================
+       BOTANICAL GROWTH LOADER
+       ================================================================ */
+    .botanical-loader {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      height: 52px;
+    }
+    @keyframes drawPath {
+      0%   { stroke-dashoffset: 1; opacity: 0.25; }
+      20%  { opacity: 1; }
+      55%  { stroke-dashoffset: 0; opacity: 1; }
+      78%  { stroke-dashoffset: 0; opacity: 0.7; }
+      100% { stroke-dashoffset: 1; opacity: 0.25; }
+    }
+    .loader-stem {
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+      animation: drawPath 2.2s ease-in-out infinite;
+    }
+    .loader-leaf-l {
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+      animation: drawPath 2.2s ease-in-out infinite;
+      animation-delay: 0.32s;
+    }
+    .loader-leaf-r {
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+      animation: drawPath 2.2s ease-in-out infinite;
+      animation-delay: 0.62s;
+    }
+    .loader-bud {
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+      animation: drawPath 2.2s ease-in-out infinite;
+      animation-delay: 0.88s;
+    }
+
+    /* ================================================================
+       NOTEBOOK — botanical column divider
+       ================================================================ */
+    .notebook-columns {
+      position: relative;
+    }
+    .notebook-columns::before {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 12px;
+      transform: translateX(-50%);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='24' viewBox='0 0 12 24'%3E%3Cline x1='6' y1='0' x2='6' y2='24' stroke='%236b5a35' stroke-width='0.5'/%3E%3Cpath d='M6 7 C3 6 2 4.5 3 3' stroke='%236b5a35' stroke-width='0.75' fill='none' stroke-linecap='round'/%3E%3Cpath d='M6 7 C9 6 10 4.5 9 3' stroke='%236b5a35' stroke-width='0.75' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='6' cy='12' r='1.1' fill='%236b5a35'/%3E%3Cpath d='M6 19 C3 18 2 16.5 3 15' stroke='%236b5a35' stroke-width='0.75' fill='none' stroke-linecap='round'/%3E%3Cpath d='M6 19 C9 18 10 16.5 9 15' stroke='%236b5a35' stroke-width='0.75' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: repeat-y;
+      background-size: 12px 24px;
+      opacity: 0.45;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .notebook-col { position: relative; z-index: 1; }
+    .notebook-col:first-child  { padding-right: 20px; }
+    .notebook-col:last-child   { padding-left: 20px; }
+
+    /* ================================================================
+       ENGRAVED NUMERAL TREATMENT
+       ================================================================ */
+    .notebook-stats, .poll-result, .card-meta {
+      text-shadow: 0 1px 0 rgba(0,0,0,0.75), 0 -1px 0 rgba(255,255,255,0.03);
+    }
+
+    /* ================================================================
+       BOTANICAL SECTION DIVIDER — reusable class
+       ================================================================ */
+    .divider-botanical {
+      height: 9px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='9' viewBox='0 0 48 9'%3E%3Cpath d='M0 6 C6 3 12 7 18 4 C24 1.5 30 6 36 3.5 C42 1 46 5 48 5' stroke='%236b5a35' stroke-width='0.9' fill='none'/%3E%3Cpath d='M18 4 C16 2.5 15 1 17 0.3' stroke='%236b5a35' stroke-width='0.65' fill='none' stroke-linecap='round'/%3E%3Cpath d='M18 4 C20 2.5 21 1 19 0.3' stroke='%236b5a35' stroke-width='0.65' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='18' cy='0.4' r='0.9' fill='%236b5a35'/%3E%3Ccircle cx='36' cy='3.5' r='0.8' fill='%236b5a35'/%3E%3Ccircle cx='12' cy='6.8' r='1' fill='%236b5a35'/%3E%3Ccircle cx='30' cy='6.2' r='1' fill='%236b5a35'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-size: 48px 9px;
+      margin: 18px 0;
+      opacity: 0.7;
+    }
   </style>
 </head>
 <body>
+
+<!-- Page corner botanical ornaments -->
+<div id="page-corners" aria-hidden="true">
+  <span></span><span></span><span></span><span></span>
+</div>
+
+<!-- Binding spine -->
+<div id="spine" aria-hidden="true"></div>
 
 <header>
   <div class="logo-group">
@@ -724,18 +1372,28 @@
   </nav>
   <div class="ollama-status">
     <!--
-      Flower indicator: 6 petals around center, color driven by JS.
+      Wax seal indicator: outer disc ring, 8 radiating petals, central medallion.
+      Color on all .petal elements driven by JS.
       Amber = checking, green = ready, red = unavailable.
     -->
-    <svg id="ollama-flower" width="16" height="16" viewBox="0 0 16 16" fill="none"
+    <svg id="ollama-flower" width="19" height="19" viewBox="0 0 19 19" fill="none"
          xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24"/>
-      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24" transform="rotate(60 8 8)"/>
-      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24" transform="rotate(120 8 8)"/>
-      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24" transform="rotate(180 8 8)"/>
-      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24" transform="rotate(240 8 8)"/>
-      <ellipse class="petal" cx="8" cy="4.5" rx="1.4" ry="2.5" fill="#fbbf24" transform="rotate(300 8 8)"/>
-      <circle class="petal" cx="8" cy="8" r="2" fill="#fbbf24"/>
+      <!-- Outer ring (low opacity) -->
+      <circle class="petal" cx="9.5" cy="9.5" r="9" fill="#fbbf24" opacity="0.18"/>
+      <!-- 8 tear-drop petals radiating from center -->
+      <ellipse class="petal" cx="9.5" cy="4.5" rx="0.95" ry="1.8" fill="#fbbf24"/>
+      <ellipse class="petal" cx="9.5" cy="4.5" rx="0.95" ry="1.8" fill="#fbbf24" transform="rotate(45 9.5 9.5)"/>
+      <ellipse class="petal" cx="9.5" cy="4.5" rx="0.95" ry="1.8" fill="#fbbf24" transform="rotate(90 9.5 9.5)"/>
+      <ellipse class="petal" cx="9.5" cy="4.5" rx="0.95" ry="1.8" fill="#fbbf24" transform="rotate(135 9.5 9.5)"/>
+      <ellipse class="petal" cx="9.5" cy="4.5" rx="0.95" ry="1.8" fill="#fbbf24" transform="rotate(180 9.5 9.5)"/>
+      <ellipse class="petal" cx="9.5" cy="4.5" rx="0.95" ry="1.8" fill="#fbbf24" transform="rotate(225 9.5 9.5)"/>
+      <ellipse class="petal" cx="9.5" cy="4.5" rx="0.95" ry="1.8" fill="#fbbf24" transform="rotate(270 9.5 9.5)"/>
+      <ellipse class="petal" cx="9.5" cy="4.5" rx="0.95" ry="1.8" fill="#fbbf24" transform="rotate(315 9.5 9.5)"/>
+      <!-- Central disc -->
+      <circle class="petal" cx="9.5" cy="9.5" r="2.8" fill="#fbbf24"/>
+      <!-- Botanical leaf incised on centre -->
+      <path d="M9.5 8 C8.5 8.7 8.5 10.3 9.5 11 C10.5 10.3 10.5 8.7 9.5 8 Z"
+            fill="var(--bg)" opacity="0.45"/>
     </svg>
     <span id="ollama-label" class="ollama-label">checking…</span>
   </div>
@@ -757,23 +1415,147 @@
 
   <!-- Session view -->
   <div id="view-session" class="view">
-    <div class="stub-view">
-      <h2>Study Session</h2>
-      <div class="session-url-row">
-        <input type="url" id="session-url" placeholder="Paste article URL…" />
-        <button class="btn primary" onclick="showToast('Session functionality arrives in Stage 2.', 'info')">
-          Start Session
-        </button>
+    <div class="session-view-inner">
+      <div class="session-input-row">
+        <input type="url" id="session-url" placeholder="Paste any threat intelligence article URL" />
+        <button class="btn primary" id="session-start-btn" onclick="startSession()">Start Session</button>
       </div>
-      <p>Session functionality arrives in Stage 2.<br>Paste any article URL above to begin when ready.</p>
+
+      <div id="session-panel" class="session-panel" style="display:none">
+
+        <!-- Phase indicator -->
+        <div class="phase-indicator">
+          <div class="phase-dot-group">
+            <div class="phase-dot" id="phase-dot-pre"><div class="phase-dot-inner"></div></div>
+            <div class="phase-label">Pre-Read</div>
+          </div>
+          <div class="phase-connector">
+            <svg width="80" height="10" viewBox="0 0 80 10" fill="none">
+              <path d="M0 5 C10 2 20 8 30 5 C40 2 50 8 60 5 C70 2 78 5 80 5"
+                    stroke="var(--gold-line)" stroke-width="0.75" fill="none"/>
+            </svg>
+          </div>
+          <div class="phase-dot-group">
+            <div class="phase-dot" id="phase-dot-terms"><div class="phase-dot-inner"></div></div>
+            <div class="phase-label">Terms</div>
+          </div>
+          <div class="phase-connector">
+            <svg width="80" height="10" viewBox="0 0 80 10" fill="none">
+              <path d="M0 5 C10 2 20 8 30 5 C40 2 50 8 60 5 C70 2 78 5 80 5"
+                    stroke="var(--gold-line)" stroke-width="0.75" fill="none"/>
+            </svg>
+          </div>
+          <div class="phase-dot-group">
+            <div class="phase-dot" id="phase-dot-socratic"><div class="phase-dot-inner"></div></div>
+            <div class="phase-label">Socratic</div>
+          </div>
+        </div>
+
+        <!-- Botanical growth loader — shown during AI processing -->
+        <div class="botanical-loader" id="botanical-loader" style="display:none" aria-hidden="true">
+          <svg width="34" height="50" viewBox="0 0 34 50" fill="none" overflow="visible">
+            <path class="loader-stem" pathLength="1"
+                  d="M17 48 C17 38 17 18 17 5"
+                  stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"/>
+            <path class="loader-leaf-l" pathLength="1"
+                  d="M17 36 C12 31 7 24 10 18 C13 12 17 25 17 33"
+                  stroke="var(--accent)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+            <path class="loader-leaf-r" pathLength="1"
+                  d="M17 28 C22 23 27 16 24 10 C21 4 17 17 17 25"
+                  stroke="var(--accent)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+            <path class="loader-bud" pathLength="1"
+                  d="M17 5 C15 3 14 1 17 0 C20 1 19 3 17 5"
+                  stroke="var(--accent)" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <!-- Status message -->
+        <div id="session-status" class="session-status"></div>
+
+        <!-- Prompt display -->
+        <div id="session-prompt-wrap" style="display:none">
+          <div id="session-question-counter" class="session-question-counter"></div>
+          <div class="session-prompt-frame">
+            <svg class="prompt-arch" viewBox="0 0 600 120" fill="none" preserveAspectRatio="none">
+              <path d="M20 115 L20 62 Q20 8 300 8 Q580 8 580 62 L580 115"
+                    stroke="var(--gold-line)" stroke-width="1" fill="none"/>
+              <path d="M20 115 C10 115 4 108 4 98"
+                    stroke="var(--gold-line)" stroke-width="0.75" fill="none" stroke-linecap="round"/>
+              <path d="M580 115 C590 115 596 108 596 98"
+                    stroke="var(--gold-line)" stroke-width="0.75" fill="none" stroke-linecap="round"/>
+              <circle cx="300" cy="8" r="3" fill="var(--gold-line)"/>
+              <path d="M272 8 C280 3 290 1.5 300 1.5 C310 1.5 320 3 328 8"
+                    stroke="var(--gold-line)" stroke-width="0.75" fill="none" stroke-linecap="round"/>
+            </svg>
+            <p id="session-prompt-text" class="session-prompt-text"></p>
+          </div>
+        </div>
+
+        <!-- Response area -->
+        <div id="session-response-area" class="session-response-area" style="display:none">
+          <textarea id="session-response-input" class="session-textarea" rows="4"
+                    placeholder="Speak your hypothesis here..."></textarea>
+          <div class="session-response-footer">
+            <span class="session-shortcut-hint">Ctrl+Enter to submit</span>
+            <button class="btn primary" onclick="submitResponse()">Submit</button>
+          </div>
+        </div>
+
+        <!-- Terms panel -->
+        <div id="session-terms-panel" class="session-terms-panel" style="display:none">
+          <div class="session-terms-label">Added to your notebook</div>
+          <div id="session-terms-list" class="session-terms-list"></div>
+        </div>
+
+        <!-- Summary panel -->
+        <div id="session-summary-panel" class="session-summary-panel" style="display:none">
+          <h2 class="session-complete-heading">Session Complete</h2>
+          <div class="session-summary-cols">
+            <div class="summary-col summary-col-strong">
+              <div class="summary-col-header">Strong Points</div>
+              <ul id="summary-strong-list"></ul>
+            </div>
+            <div class="summary-col summary-col-gaps">
+              <div class="summary-col-header">Knowledge Gaps</div>
+              <ul id="summary-gaps-list"></ul>
+            </div>
+            <div class="summary-col summary-col-study">
+              <div class="summary-col-header">Recommended Study</div>
+              <ul id="summary-study-list"></ul>
+            </div>
+          </div>
+          <div style="text-align:center;margin-top:20px">
+            <button class="btn primary" onclick="resetSession()">Start Another Session</button>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 
   <!-- Notebook view -->
   <div id="view-notebook" class="view">
-    <div class="stub-view">
-      <h2>I Don't Know Notebook</h2>
-      <p>The I Don't Know notebook arrives in Stage 2.</p>
+    <div class="notebook-view-inner">
+      <div class="notebook-header-row">
+        <h2 class="notebook-heading">I Don't Know</h2>
+        <span id="notebook-stats" class="notebook-stats"></span>
+      </div>
+      <div class="notebook-add-row">
+        <input type="text" id="notebook-term-input"
+               placeholder="Add a term or technique..."
+               onkeydown="if(event.key==='Enter')addTerm()" />
+        <button class="btn primary" onclick="addTerm()">Add</button>
+      </div>
+      <div class="notebook-columns">
+        <div class="notebook-col">
+          <div class="notebook-col-header">Unresolved</div>
+          <div id="notebook-unresolved" class="notebook-card-list"></div>
+        </div>
+        <div class="notebook-col">
+          <div class="notebook-col-header">Resolved</div>
+          <div id="notebook-resolved" class="notebook-card-list"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -885,30 +1667,43 @@ async function apiFetch(path, options = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Toast — botanical leaf SVG prefix, slides in from right
+// Toast — elaborate botanical sprig SVG, slides in from right
 // ---------------------------------------------------------------------------
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   const el = document.createElement('div');
   el.className = `toast ${type}`;
 
-  // Leaf color and orientation per type
-  const leafColor = type === 'error' ? '#f87171' : type === 'success' ? '#4ade80' : '#c8a96e';
-  let leafPath;
+  const c = type === 'error' ? '#f87171' : type === 'success' ? '#4ade80' : '#c8a96e';
+  let sprig;
+
   if (type === 'success') {
-    // Upright leaf
-    leafPath = `<path d='M3 7 C1 5 1.5 2 3 1 C4.5 2 5 5 3 7' stroke='${leafColor}' stroke-width='1' fill='none' stroke-linecap='round'/>`;
+    // Upright healthy sprig: stem, two flanking leaves, bud at tip
+    sprig = `<svg class="toast-leaf" viewBox="0 0 9 11" width="9" height="11" fill="none">
+      <path d='M4.5 10.5 C4.5 8 4.5 4 4.5 1' stroke='${c}' stroke-width='0.9' stroke-linecap='round'/>
+      <path d='M4.5 7.5 C2.5 6.5 1 4.5 2 3 C3 3.5 4.5 5.5 4.5 7.5' stroke='${c}' stroke-width='0.7' fill='none' stroke-linecap='round'/>
+      <path d='M4.5 6 C6.5 5 8 3 7 1.5 C6 2 4.5 4 4.5 6' stroke='${c}' stroke-width='0.7' fill='none' stroke-linecap='round'/>
+      <circle cx='4.5' cy='0.8' r='0.95' fill='${c}'/>
+    </svg>`;
   } else if (type === 'error') {
-    // Wilted leaf, drooping down
-    leafPath = `<path d='M3 1 C5 2 5.5 4.5 4 6 C3 6.5 1.5 7 2 7' stroke='${leafColor}' stroke-width='1' fill='none' stroke-linecap='round'/>`;
+    // Wilted drooping sprig
+    sprig = `<svg class="toast-leaf" viewBox="0 0 9 11" width="9" height="11" fill="none">
+      <path d='M2.5 1 C3.5 2.5 5.5 4.5 6.5 6 C7.5 7.5 6.5 9.5 5.5 10.5' stroke='${c}' stroke-width='0.9' fill='none' stroke-linecap='round'/>
+      <path d='M4.5 4.5 C6 5.5 7.5 6.5 7.5 8.5' stroke='${c}' stroke-width='0.7' fill='none' stroke-linecap='round'/>
+      <path d='M3.5 3.5 C1.5 4.5 0.5 6 1 8' stroke='${c}' stroke-width='0.7' fill='none' stroke-linecap='round'/>
+      <circle cx='2.5' cy='1' r='0.8' fill='${c}' opacity='0.6'/>
+    </svg>`;
   } else {
-    // Pointing right
-    leafPath = `<path d='M1 4 C2 1.5 4.5 1 5 3 C5.5 4.5 4 6.5 2 7' stroke='${leafColor}' stroke-width='1' fill='none' stroke-linecap='round'/>`;
+    // Info: horizontal sprig pointing right, leaves along stem, bud tip
+    sprig = `<svg class="toast-leaf" viewBox="0 0 10 9" width="10" height="9" fill="none">
+      <path d='M1 6 C3 5 6 4.5 9 4.5' stroke='${c}' stroke-width='0.9' stroke-linecap='round'/>
+      <path d='M3.5 6 C3 4.5 3.5 2.5 5 2 C5.5 3 5 5 3.5 6' stroke='${c}' stroke-width='0.7' fill='none' stroke-linecap='round'/>
+      <path d='M6 5 C5.5 3.5 6 1.5 7.5 1 C8 2 7.5 4 6 5' stroke='${c}' stroke-width='0.7' fill='none' stroke-linecap='round'/>
+      <circle cx='9' cy='4.5' r='0.9' fill='${c}'/>
+    </svg>`;
   }
 
-  const leafSvg = `<svg class="toast-leaf" viewBox="0 0 6 8" width="6" height="8" fill="none"
-    xmlns="http://www.w3.org/2000/svg">${leafPath}</svg>`;
-  el.innerHTML = `${leafSvg}<span>${esc(message)}</span>`;
+  el.innerHTML = `${sprig}<span>${esc(message)}</span>`;
   container.appendChild(el);
   setTimeout(() => {
     el.style.opacity = '0';
@@ -918,12 +1713,14 @@ function showToast(message, type = 'info') {
 }
 
 // ---------------------------------------------------------------------------
-// Tab navigation
+// Tab navigation — with page-turn fade
 // ---------------------------------------------------------------------------
 function switchTab(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('view-' + name).classList.add('active');
+  const view = document.getElementById('view-' + name);
+  // Force animation replay by removing and re-adding active
+  view.classList.add('active');
   document.querySelector(`[data-tab="${name}"]`).classList.add('active');
 }
 
@@ -1209,6 +2006,356 @@ async function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ---------------------------------------------------------------------------
+// Session — WebSocket client
+// ---------------------------------------------------------------------------
+let sessionState = {
+  ws: null,
+  phase: null,
+  questionIndex: 0,
+  totalQuestions: 4,
+  url: null,
+};
+
+function startSession() {
+  const urlInput = document.getElementById('session-url');
+  const url = urlInput.value.trim();
+  if (!url) { showToast('Please enter an article URL.', 'error'); return; }
+
+  sessionState.url = url;
+  sessionState.phase = null;
+  sessionState.questionIndex = 0;
+
+  document.getElementById('session-panel').style.display = 'flex';
+  document.getElementById('session-start-btn').disabled = true;
+  document.getElementById('session-prompt-wrap').style.display = 'none';
+  document.getElementById('session-response-area').style.display = 'none';
+  document.getElementById('session-terms-panel').style.display = 'none';
+  document.getElementById('session-summary-panel').style.display = 'none';
+  setLoader(true, 'Connecting…');
+  setPhaseIndicator(null);
+
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  sessionState.ws = new WebSocket(`${protocol}//${location.host}/ws/session`);
+
+  sessionState.ws.onopen = () => {
+    sessionState.ws.send(JSON.stringify({ type: 'start', url }));
+  };
+
+  sessionState.ws.onmessage = (event) => {
+    try { handleSessionMessage(JSON.parse(event.data)); }
+    catch { showToast('Session protocol error.', 'error'); }
+  };
+
+  sessionState.ws.onerror = () => {
+    showToast('WebSocket connection failed.', 'error');
+    document.getElementById('session-start-btn').disabled = false;
+    setLoader(false, '');
+  };
+}
+
+function setLoader(on, text) {
+  const loader = document.getElementById('botanical-loader');
+  const statusEl = document.getElementById('session-status');
+  if (loader) loader.style.display = on ? 'flex' : 'none';
+  statusEl.textContent = text || '';
+  if (on) statusEl.classList.add('loading');
+  else     statusEl.classList.remove('loading');
+}
+
+function handleSessionMessage(msg) {
+  const statusEl = document.getElementById('session-status');
+  switch (msg.type) {
+
+    case 'status':
+      setLoader(true, msg.message);
+      break;
+
+    case 'phase':
+      setLoader(false, '');
+      sessionState.phase = msg.phase;
+      if (msg.phase === 'pre') setPhaseIndicator('pre');
+      document.getElementById('session-question-counter').textContent = '';
+      document.getElementById('session-prompt-text').textContent = msg.prompt;
+      document.getElementById('session-prompt-wrap').style.display = 'block';
+      const taP = document.getElementById('session-response-input');
+      taP.placeholder = 'Speak your hypothesis here...';
+      taP.value = '';
+      document.getElementById('session-response-area').style.display = 'flex';
+      taP.focus();
+      break;
+
+    case 'terms':
+      setLoader(false, '');
+      setPhaseIndicator('terms');
+      renderSessionTerms(msg.entries);
+      document.getElementById('session-terms-panel').style.display = 'block';
+      break;
+
+    case 'question':
+      setLoader(false, '');
+      sessionState.phase = 'post';
+      sessionState.questionIndex = msg.index;
+      sessionState.totalQuestions = msg.total;
+      setPhaseIndicator('socratic');
+      document.getElementById('session-question-counter').textContent =
+        `Question ${msg.index + 1} of ${msg.total}`;
+      document.getElementById('session-prompt-text').textContent = msg.text;
+      document.getElementById('session-prompt-wrap').style.display = 'block';
+      const taQ = document.getElementById('session-response-input');
+      taQ.placeholder = 'Your answer...';
+      taQ.value = '';
+      document.getElementById('session-response-area').style.display = 'flex';
+      taQ.focus();
+      break;
+
+    case 'summary':
+      setLoader(false, '');
+      document.getElementById('session-response-area').style.display = 'none';
+      document.getElementById('session-prompt-wrap').style.display = 'none';
+      renderSessionSummary(msg.data);
+      document.getElementById('session-summary-panel').style.display = 'block';
+      break;
+
+    case 'complete':
+      if (sessionState.url) {
+        const art = state.articles.find(a => a.url === sessionState.url);
+        if (art) {
+          art.session_status = 'complete';
+          state.unseenCount = state.articles.filter(a => a.session_status === 'not_started').length;
+          updateFeedBadge();
+        }
+      }
+      document.getElementById('session-start-btn').disabled = false;
+      break;
+
+    case 'error':
+      setLoader(false, '');
+      showToast('Session error: ' + msg.message, 'error');
+      document.getElementById('session-start-btn').disabled = false;
+      break;
+  }
+}
+
+function submitResponse() {
+  const ta = document.getElementById('session-response-input');
+  const value = ta.value.trim();
+  if (!value) { showToast('Please enter a response before submitting.', 'error'); return; }
+  if (!sessionState.ws || sessionState.ws.readyState !== WebSocket.OPEN) {
+    showToast('Connection lost. Please start a new session.', 'error');
+    return;
+  }
+  let message;
+  if (sessionState.phase === 'pre') {
+    message = { type: 'response', phase: 'pre', text: value };
+  } else if (sessionState.phase === 'post') {
+    message = { type: 'response', phase: 'post', index: sessionState.questionIndex, text: value };
+  }
+  if (message) {
+    sessionState.ws.send(JSON.stringify(message));
+    ta.value = '';
+    document.getElementById('session-response-area').style.display = 'none';
+    document.getElementById('session-prompt-wrap').style.display = 'none';
+    setLoader(true, 'Processing…');
+  }
+}
+
+function setPhaseIndicator(phase) {
+  const phases = ['pre', 'terms', 'socratic'];
+  const idx = phases.indexOf(phase);
+  phases.forEach((p, i) => {
+    const dot = document.getElementById(`phase-dot-${p}`);
+    if (!dot) return;
+    dot.classList.remove('active', 'done');
+    if (phase === null) return;
+    if (i < idx) dot.classList.add('done');
+    else if (i === idx) dot.classList.add('active');
+  });
+}
+
+function renderSessionTerms(entries) {
+  document.getElementById('session-terms-list').innerHTML = entries.map(e => {
+    const mitre = e.mitre_reference
+      ? `<span class="term-card-mitre">${esc(e.mitre_reference)}</span>` : '';
+    return `
+      <div class="session-term-card">
+        <div class="term-card-name">${esc(e.term)}</div>
+        <div class="term-card-explanation">${esc(e.plain_explanation || '')}</div>
+        ${mitre}
+      </div>`;
+  }).join('');
+}
+
+function renderSessionSummary(data) {
+  const strong = data.strong_points || [];
+  const gaps   = data.gap_terms || [];
+  const study  = data.recommended_entries || [];
+  const li = (arr) => arr.length
+    ? arr.map(s => `<li>${esc(s)}</li>`).join('')
+    : '<li style="opacity:0.45">None identified</li>';
+  document.getElementById('summary-strong-list').innerHTML = li(strong);
+  document.getElementById('summary-gaps-list').innerHTML   = li(gaps);
+  document.getElementById('summary-study-list').innerHTML  = li(study);
+}
+
+function resetSession() {
+  if (sessionState.ws) { try { sessionState.ws.close(); } catch {} }
+  sessionState = { ws: null, phase: null, questionIndex: 0, totalQuestions: 4, url: null };
+  document.getElementById('session-url').value = '';
+  document.getElementById('session-panel').style.display = 'none';
+  document.getElementById('session-start-btn').disabled = false;
+  setLoader(false, '');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.key === 'Enter') {
+    if (document.activeElement && document.activeElement.id === 'session-response-input') {
+      submitResponse();
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Notebook
+// ---------------------------------------------------------------------------
+let notebookData = [];
+
+async function loadNotebook() {
+  try {
+    notebookData = await apiFetch('/api/notebook');
+    renderNotebook();
+  } catch (err) {
+    showToast('Failed to load notebook: ' + err.message, 'error');
+  }
+}
+
+function renderNotebook() {
+  const unresolved = notebookData.filter(e => !e.is_resolved);
+  const resolved   = notebookData.filter(e =>  e.is_resolved);
+  document.getElementById('notebook-stats').textContent =
+    `${unresolved.length} unresolved · ${resolved.length} resolved`;
+  document.getElementById('notebook-unresolved').innerHTML = unresolved.length
+    ? unresolved.map(renderNotebookCard).join('')
+    : `<div class="notebook-empty"><p>Your notebook is clear.</p></div>`;
+  document.getElementById('notebook-resolved').innerHTML =
+    resolved.map(renderNotebookCard).join('');
+}
+
+function renderNotebookCard(e) {
+  const resolvedClass = e.is_resolved ? ' resolved' : '';
+  const mitre = e.mitre_reference
+    ? `<span class="nb-card-mitre">${esc(e.mitre_reference)}</span>` : '';
+  const questions = e.socratic_questions || [];
+  const qBlock = questions.length ? `
+    <div>
+      <button class="questions-toggle" onclick="toggleQuestions(${e.id})">Show questions</button>
+      <ul class="card-questions-list collapsed" id="card-questions-${e.id}">
+        ${questions.map((q,i) => `<li data-num="${i+1}">${esc(q)}</li>`).join('')}
+      </ul>
+    </div>` : '';
+  const resolveBtn = e.is_resolved
+    ? `<button class="btn sm" onclick="resolveEntry(${e.id},true)">Unresolve</button>`
+    : `<button class="btn sm ghost-success" onclick="resolveEntry(${e.id},false)">Mark Resolved</button>`;
+  const resolvedAt = (e.is_resolved && e.resolved_at)
+    ? `<div class="nb-card-resolved-at">Resolved ${fmtDate(e.resolved_at)}</div>` : '';
+  return `
+    <div class="notebook-card${resolvedClass}" id="nb-card-${e.id}">
+      <div class="nb-card-term">${esc(e.term)}</div>
+      ${e.hypothesis_prompt ? `
+        <div>
+          <div class="card-field-label">Hypothesis</div>
+          <div class="nb-card-hypothesis">${esc(e.hypothesis_prompt)}</div>
+        </div>` : ''}
+      ${e.plain_explanation ? `
+        <div>
+          <div class="card-field-label">Explanation</div>
+          <div class="nb-card-explanation">${esc(e.plain_explanation)}</div>
+        </div>` : ''}
+      ${mitre}
+      ${qBlock}
+      ${e.resolution_target ? `
+        <div>
+          <div class="card-field-label">Resolve when you can say:</div>
+          <div class="nb-card-resolution">${esc(e.resolution_target)}</div>
+        </div>` : ''}
+      ${resolvedAt}
+      <div class="nb-card-actions">
+        ${resolveBtn}
+        <button class="btn sm danger" onclick="deleteEntry(${e.id})">Delete</button>
+      </div>
+    </div>`;
+}
+
+function toggleQuestions(id) {
+  const list = document.getElementById(`card-questions-${id}`);
+  if (!list) return;
+  const btn = list.previousElementSibling;
+  const wasCollapsed = list.classList.contains('collapsed');
+  list.classList.toggle('collapsed', !wasCollapsed);
+  if (btn) btn.textContent = wasCollapsed ? 'Hide questions' : 'Show questions';
+}
+
+async function resolveEntry(id, currentlyResolved) {
+  try {
+    await apiFetch(`/api/notebook/${id}/resolve`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_resolved: !currentlyResolved }),
+    });
+    await loadNotebook();
+  } catch (err) {
+    showToast('Failed to update entry: ' + err.message, 'error');
+  }
+}
+
+async function deleteEntry(id) {
+  if (!confirm('Remove this entry from your notebook?')) return;
+  try {
+    await apiFetch(`/api/notebook/${id}`, { method: 'DELETE' });
+    await loadNotebook();
+    showToast('Entry removed.', 'success');
+  } catch (err) {
+    showToast('Failed to delete entry: ' + err.message, 'error');
+  }
+}
+
+async function addTerm() {
+  const input = document.getElementById('notebook-term-input');
+  const term = input.value.trim();
+  if (!term) { showToast('Please enter a term.', 'error'); return; }
+
+  const existing = notebookData.find(e => e.term.toLowerCase() === term.toLowerCase());
+  if (existing) {
+    showToast('Already in notebook', 'info');
+    const card = document.getElementById(`nb-card-${existing.id}`);
+    if (card) {
+      card.style.borderColor = 'var(--accent)';
+      setTimeout(() => { card.style.borderColor = ''; }, 1500);
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    return;
+  }
+
+  const btn = document.querySelector('.notebook-add-row .btn');
+  if (btn) btn.disabled = true;
+  try {
+    await apiFetch('/api/notebook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ term }),
+    });
+    input.value = '';
+    await loadNotebook();
+    showToast(`"${esc(term)}" added to notebook.`, 'success');
+  } catch (err) {
+    showToast('Failed to add term: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() { loadNotebook(); });
 </script>
 
 </body>
