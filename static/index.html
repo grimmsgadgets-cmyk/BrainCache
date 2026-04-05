@@ -1595,6 +1595,154 @@
     .src-error-indicator:hover .src-error-tooltip {
       display: block;
     }
+
+    /* ================================================================
+       HISTORY VIEW
+       ================================================================ */
+    .history-view-inner { max-width: 860px; margin: 0 auto; }
+    .history-heading {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .history-subheading {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 22px;
+    }
+    .history-list { display: flex; flex-direction: column; gap: 10px; }
+    .history-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 14px 16px;
+      position: relative;
+    }
+    .history-card::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px;
+      width: 12px; height: 12px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 10 C2 5.5 5.5 2 10 2' stroke='%236b5a35' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M2 6.5 C1.5 4 2.5 2 4.5 2' stroke='%236b5a35' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+    }
+    .history-card::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; right: -1px;
+      width: 12px; height: 12px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M10 2 C10 6.5 6.5 10 2 10' stroke='%236b5a35' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M10 5.5 C10.5 8 9.5 10 7.5 10' stroke='%236b5a35' stroke-width='0.75' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+    }
+    .history-card-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+    .history-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .history-card-detail {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .history-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    /* ================================================================
+       NOTEBOOK TOOLBAR — search + sort
+       ================================================================ */
+    .notebook-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0 10px;
+      margin-bottom: 14px;
+      border-top: 1px solid transparent;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='4' viewBox='0 0 48 4'%3E%3Cpath d='M0 3 C6 1.5 12 3.5 18 2 C24 0.5 30 3 36 1.5 C42 0 46 2.5 48 2.5' stroke='%236b5a35' stroke-width='0.55' fill='none'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-position: top center;
+      background-size: 48px 4px;
+    }
+    .notebook-toolbar-left { flex: 1; }
+    .notebook-toolbar-right { flex-shrink: 0; }
+    #notebook-search { width: 200px; }
+    #notebook-sort { min-width: 160px; }
+
+    /* ================================================================
+       ARTICLE CARD ACTION ROW
+       ================================================================ */
+    .article-card-actions {
+      display: flex;
+      gap: 8px;
+      padding-top: 8px;
+      margin-top: 6px;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.2s ease, opacity 0.2s ease;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='3' viewBox='0 0 32 3'%3E%3Cpath d='M0 2 C4 0.5 8 2.5 12 1.5 C16 0.5 20 2.5 24 1.5 C28 0.5 30 2 32 2' stroke='%236b5a35' stroke-width='0.6' fill='none'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-position: top;
+      background-size: 32px 3px;
+    }
+    .article-card:hover .article-card-actions {
+      max-height: 40px;
+      opacity: 1;
+    }
+
+    /* ================================================================
+       FEED SEARCH
+       ================================================================ */
+    #feed-search { flex: 1; min-width: 120px; }
+    .feed-search-count {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* ================================================================
+       SESSION WARNING BAR
+       ================================================================ */
+    .session-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: var(--surface3);
+      border-left: 2px solid var(--warn);
+      padding: 8px 12px;
+      border-radius: 2px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.5;
+      animation: slideInRight 0.2s ease;
+    }
+
+    /* ================================================================
+       NOTEBOOK EXPORT BUTTON — inline in header row
+       ================================================================ */
+    .notebook-export-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: auto;
+    }
   </style>
 </head>
 <body>
@@ -1633,6 +1781,9 @@
     </button>
     <button class="tab-btn" data-tab="session" onclick="switchTab('session')">Session</button>
     <button class="tab-btn" data-tab="notebook" onclick="switchTab('notebook')">Notebook</button>
+    <button class="tab-btn" data-tab="history" onclick="switchTab('history')">
+      History <span id="history-badge" class="tab-badge"></span>
+    </button>
     <button class="tab-btn" data-tab="sources" onclick="switchTab('sources')">Sources</button>
   </nav>
   <!-- Voice status indicators: TTS and STT, 5-petal flowers -->
@@ -1702,8 +1853,11 @@
       <select id="source-filter" onchange="filterArticles()">
         <option value="">All Sources</option>
       </select>
-      <button class="btn primary" style="margin-left:auto" onclick="pollAll()">Poll All Sources</button>
+      <input type="text" id="feed-search" placeholder="Search articles…"
+             oninput="onFeedSearch(this.value)" />
+      <button class="btn primary" onclick="pollAll()">Poll All Sources</button>
     </div>
+    <div id="feed-search-count" class="feed-search-count" style="display:none"></div>
     <div id="article-list" class="article-list">
       <div class="empty-state">Loading articles…</div>
     </div>
@@ -1746,6 +1900,9 @@
             <div class="phase-label">Socratic</div>
           </div>
         </div>
+
+        <!-- Session warnings (recoverable errors) -->
+        <div id="session-warnings" style="display:flex;flex-direction:column;gap:6px"></div>
 
         <!-- Botanical growth loader — shown during AI processing -->
         <div class="botanical-loader" id="botanical-loader" style="display:none" aria-hidden="true">
@@ -1836,6 +1993,7 @@
               </div>
             </div>
             <div class="mic-status-text" id="mic-status-text"></div>
+            <div class="session-shortcut-hint" style="margin-top:-6px">Space to record</div>
 
             <!-- Transcription display (shown after recording) -->
             <div id="voice-transcription-wrap" style="display:none; width:100%">
@@ -1892,12 +2050,34 @@
       <div class="notebook-header-row">
         <h2 class="notebook-heading">I Don't Know</h2>
         <span id="notebook-stats" class="notebook-stats"></span>
+        <a class="btn sm notebook-export-btn" href="/api/notebook/export">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M6 1 L6 8" stroke="var(--muted)" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M3.5 6 L6 8.5 L8.5 6" stroke="var(--muted)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M1 10 L11 10" stroke="var(--muted)" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          Export .md
+        </a>
       </div>
       <div class="notebook-add-row">
         <input type="text" id="notebook-term-input"
                placeholder="Add a term or technique..."
                onkeydown="if(event.key==='Enter')addTerm()" />
         <button class="btn primary" onclick="addTerm()">Add</button>
+      </div>
+      <div class="notebook-toolbar">
+        <div class="notebook-toolbar-left">
+          <input type="text" id="notebook-search" placeholder="Search terms…"
+                 oninput="onNotebookSearch()" />
+        </div>
+        <div class="notebook-toolbar-right">
+          <select id="notebook-sort" onchange="onNotebookSort()">
+            <option value="unresolved_first">Unresolved first</option>
+            <option value="alpha">Alphabetical A–Z</option>
+            <option value="recent">Recently added</option>
+            <option value="resolved_recent">Recently resolved</option>
+          </select>
+        </div>
       </div>
       <div class="notebook-columns">
         <div class="notebook-col">
@@ -1908,6 +2088,17 @@
           <div class="notebook-col-header">Resolved</div>
           <div id="notebook-resolved" class="notebook-card-list"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History view -->
+  <div id="view-history" class="view">
+    <div class="history-view-inner">
+      <h2 class="history-heading">Session History</h2>
+      <div id="history-subheading" class="history-subheading"></div>
+      <div id="history-list" class="history-list">
+        <div class="empty-state">Loading…</div>
       </div>
     </div>
   </div>
@@ -1992,6 +2183,8 @@ const state = {
   sources: [],
   articles: [],
   unseenCount: 0,
+  voiceEnabled: false,
+  recording: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -2376,18 +2569,24 @@ function renderArticles() {
     const summary = a.summary
       ? `<div class="card-summary">${esc(a.summary)}</div>` : '';
 
+    const urlJson = JSON.stringify(a.url);
     return `
-      <div class="article-card" onclick="openInSession(${JSON.stringify(esc(a.url))})">
+      <div class="article-card" id="article-card-${a.id}" onclick="openInSession(${urlJson})">
         <div class="card-top">
           <div class="card-title">${esc(a.title || a.url)}</div>
           ${typeBadge}
-          ${statusBadge}
+          <span id="article-status-badge-${a.id}">${statusBadge}</span>
         </div>
         <div class="card-meta">
           <span>${esc(a.source_name || '')}</span>
           ${a.published_date ? `<span>${fmtDate(a.published_date)}</span>` : ''}
         </div>
         ${summary}
+        <div class="article-card-actions" onclick="event.stopPropagation()">
+          <button class="btn sm" onclick="openInSession(${urlJson})">Study</button>
+          <button class="btn sm" onclick="markArticle(${urlJson}, 'read', ${a.id})">Mark Read</button>
+          <button class="btn sm danger" onclick="dismissArticle(${urlJson}, ${a.id})">Dismiss</button>
+        </div>
       </div>`;
   }).join('');
 }
@@ -2492,6 +2691,8 @@ async function init() {
   await Promise.all([loadSources(), loadArticles()]);
   checkOllamaStatus();
   checkVoiceStatus();
+  loadNotebook();
+  loadHistory();
   setInterval(checkOllamaStatus, 30000);
   setInterval(checkVoiceStatus, 30000);
   connectNotifications();
@@ -2510,10 +2711,24 @@ let sessionState = {
   url: null,
 };
 
-function startSession() {
+async function startSession() {
   const urlInput = document.getElementById('session-url');
   const url = urlInput.value.trim();
   if (!url) { showToast('Please enter an article URL.', 'error'); return; }
+
+  // Check for in-progress session
+  try {
+    const statusRes = await apiFetch(`/api/session/status/${encodeURIComponent(url)}`);
+    if (statusRes.can_resume) {
+      const resume = confirm(
+        `You have an unfinished session for:\n"${statusRes.article_title || url}"\n\nResume where you left off?`
+      );
+      // Either way, open the WebSocket — session state managed server-side.
+      void resume; // acknowledged
+    }
+  } catch (_) {
+    // Non-fatal — proceed without resume check
+  }
 
   sessionState.url = url;
   sessionState.phase = null;
@@ -2525,6 +2740,7 @@ function startSession() {
   document.getElementById('session-response-area').style.display = 'none';
   document.getElementById('session-terms-panel').style.display = 'none';
   document.getElementById('session-summary-panel').style.display = 'none';
+  document.getElementById('session-warnings').innerHTML = '';
   setLoader(true, 'Connecting…');
   setPhaseIndicator(null);
 
@@ -2623,9 +2839,13 @@ function handleSessionMessage(msg) {
       break;
 
     case 'error':
-      setLoader(false, '');
-      showToast('Session error: ' + msg.message, 'error');
-      document.getElementById('session-start-btn').disabled = false;
+      if (msg.recoverable) {
+        showSessionWarning(msg.message);
+      } else {
+        setLoader(false, '');
+        showToast('Session error: ' + msg.message, 'error');
+        resetSessionUI();
+      }
       break;
   }
 }
@@ -2701,9 +2921,35 @@ function resetSession() {
 }
 
 document.addEventListener('keydown', function(e) {
+  // Ctrl+Enter — submit current session response
   if (e.ctrlKey && e.key === 'Enter') {
-    if (document.activeElement && document.activeElement.id === 'session-response-input') {
+    const sessionActive = document.getElementById('view-session')?.classList.contains('active');
+    if (sessionActive) {
+      e.preventDefault();
       submitResponse();
+    }
+  }
+
+  // Space — start/stop recording (session voice mode)
+  if (e.key === ' ' &&
+      e.target.tagName !== 'TEXTAREA' &&
+      e.target.tagName !== 'INPUT') {
+    const sessionActive = document.getElementById('view-session')?.classList.contains('active');
+    if (sessionActive && state.voiceEnabled) {
+      e.preventDefault();
+      if (state.recording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    }
+  }
+
+  // Escape — dismiss active toast
+  if (e.key === 'Escape') {
+    const toasts = document.querySelectorAll('.toast');
+    if (toasts.length > 0) {
+      toasts[toasts.length - 1].remove();
     }
   }
 });
@@ -2722,11 +2968,55 @@ async function loadNotebook() {
   }
 }
 
+function filterAndSortNotebook(entries, searchTerm, sortBy) {
+  let result = entries;
+  if (searchTerm && searchTerm.length >= 2) {
+    const lower = searchTerm.toLowerCase();
+    result = result.filter(e =>
+      (e.term || '').toLowerCase().includes(lower) ||
+      (e.plain_explanation || '').toLowerCase().includes(lower)
+    );
+  }
+  switch (sortBy) {
+    case 'alpha':
+      result = [...result].sort((a, b) => (a.term || '').localeCompare(b.term || ''));
+      break;
+    case 'recent':
+      result = [...result].sort((a, b) => (b.created_at || '') < (a.created_at || '') ? -1 : 1);
+      break;
+    case 'resolved_recent':
+      result = [...result].sort((a, b) => (b.resolved_at || '') < (a.resolved_at || '') ? -1 : 1);
+      break;
+    default: // unresolved_first
+      result = [...result].sort((a, b) => a.is_resolved - b.is_resolved);
+  }
+  return result;
+}
+
+function onNotebookSearch() { renderNotebook(); }
+function onNotebookSort() {
+  const sortBy = document.getElementById('notebook-sort')?.value || 'unresolved_first';
+  localStorage.setItem('braincache_notebook_sort', sortBy);
+  renderNotebook();
+}
+
 function renderNotebook() {
-  const unresolved = notebookData.filter(e => !e.is_resolved);
-  const resolved   = notebookData.filter(e =>  e.is_resolved);
+  const searchTerm = document.getElementById('notebook-search')?.value || '';
+  const sortEl = document.getElementById('notebook-sort');
+  const storedSort = localStorage.getItem('braincache_notebook_sort') || 'unresolved_first';
+  if (sortEl && !sortEl.dataset.initialized) {
+    sortEl.value = storedSort;
+    sortEl.dataset.initialized = '1';
+  }
+  const sortBy = sortEl ? sortEl.value : storedSort;
+
+  const filtered = filterAndSortNotebook(notebookData, searchTerm, sortBy);
+  const unresolved = filtered.filter(e => !e.is_resolved);
+  const resolved   = filtered.filter(e =>  e.is_resolved);
+  const totalUnresolved = notebookData.filter(e => !e.is_resolved).length;
+  const totalResolved   = notebookData.filter(e =>  e.is_resolved).length;
   document.getElementById('notebook-stats').textContent =
-    `${unresolved.length} unresolved · ${resolved.length} resolved`;
+    `${totalUnresolved} unresolved · ${totalResolved} resolved`;
   document.getElementById('notebook-unresolved').innerHTML = unresolved.length
     ? unresolved.map(renderNotebookCard).join('')
     : `<div class="notebook-empty"><p>Your notebook is clear.</p></div>`;
@@ -2847,8 +3137,6 @@ async function addTerm() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', function() { loadNotebook(); });
-
 // ---------------------------------------------------------------------------
 // Voice status
 // ---------------------------------------------------------------------------
@@ -2906,11 +3194,12 @@ function onVoiceToggle() {
 }
 
 function applyVoiceToggle(enabled) {
+  state.voiceEnabled = !!(enabled && window.MediaRecorder);
   const textarea = document.getElementById('session-response-input');
   const voiceArea = document.getElementById('voice-record-area');
   const footer = document.querySelector('.session-response-footer');
   if (!textarea || !voiceArea) return;
-  if (enabled && window.MediaRecorder) {
+  if (state.voiceEnabled) {
     textarea.style.display = 'none';
     voiceArea.style.display = 'flex';
     if (footer) footer.style.display = 'none';
@@ -2960,6 +3249,7 @@ function startRecording() {
     };
     voiceRecorder.mediaRecorder.start();
     voiceRecorder.recording = true;
+    state.recording = true;
 
     const wrap = document.getElementById('mic-button-wrap');
     const statusEl = document.getElementById('mic-status-text');
@@ -2974,6 +3264,7 @@ function startRecording() {
 function stopRecording() {
   if (!voiceRecorder.mediaRecorder || !voiceRecorder.recording) return;
   voiceRecorder.recording = false;
+  state.recording = false;
   voiceRecorder.mediaRecorder.stop();
 
   const wrap = document.getElementById('mic-button-wrap');
@@ -3033,6 +3324,185 @@ function editTranscription() {
   if (checkbox) checkbox.checked = false;
   const ta = document.getElementById('session-response-input');
   if (ta) { ta.value = text; ta.focus(); }
+}
+
+// ---------------------------------------------------------------------------
+// Session UI helpers
+// ---------------------------------------------------------------------------
+function resetSessionUI() {
+  document.getElementById('session-start-btn').disabled = false;
+  setLoader(false, '');
+}
+
+function showSessionWarning(message) {
+  const container = document.getElementById('session-warnings');
+  if (!container) return;
+  const c = 'var(--warn)';
+  const el = document.createElement('div');
+  el.className = 'session-warning';
+  el.innerHTML = `<svg viewBox="0 0 9 11" width="9" height="11" fill="none" style="flex-shrink:0">
+    <path d='M2.5 1 C3.5 2.5 5.5 4.5 6.5 6 C7.5 7.5 6.5 9.5 5.5 10.5' stroke='${c}' stroke-width='0.9' fill='none' stroke-linecap='round'/>
+    <path d='M4.5 4.5 C6 5.5 7.5 6.5 7.5 8.5' stroke='${c}' stroke-width='0.7' fill='none' stroke-linecap='round'/>
+    <path d='M3.5 3.5 C1.5 4.5 0.5 6 1 8' stroke='${c}' stroke-width='0.7' fill='none' stroke-linecap='round'/>
+  </svg><span>${esc(message)}</span>`;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.3s';
+    setTimeout(() => el.remove(), 300);
+  }, 8000);
+}
+
+// ---------------------------------------------------------------------------
+// Article dismiss / mark read
+// ---------------------------------------------------------------------------
+async function markArticle(url, action, articleId) {
+  try {
+    await apiFetch('/api/articles/dismiss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, action }),
+    });
+    if (action === 'read') {
+      const badge = document.getElementById(`article-status-badge-${articleId}`);
+      if (badge) badge.innerHTML = `<span class="badge badge-done">Complete</span>`;
+      showToast('Marked as read.', 'success');
+    }
+  } catch (err) {
+    showToast('Failed: ' + err.message, 'error');
+  }
+}
+
+async function dismissArticle(url, articleId) {
+  try {
+    await apiFetch('/api/articles/dismiss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, action: 'dismiss' }),
+    });
+    const card = document.getElementById(`article-card-${articleId}`);
+    if (card) {
+      card.style.transition = 'opacity 0.3s';
+      card.style.opacity = '0';
+      setTimeout(() => card.remove(), 300);
+    }
+    showToast('Article dismissed.', 'success');
+  } catch (err) {
+    showToast('Failed: ' + err.message, 'error');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Feed search
+// ---------------------------------------------------------------------------
+let feedSearchTimer = null;
+
+function onFeedSearch(value) {
+  clearTimeout(feedSearchTimer);
+  feedSearchTimer = setTimeout(async () => {
+    const countEl = document.getElementById('feed-search-count');
+    if (!value || value.length < 2) {
+      if (countEl) countEl.style.display = 'none';
+      renderArticles();
+      return;
+    }
+    try {
+      const results = await apiFetch(`/api/articles/search?q=${encodeURIComponent(value)}`);
+      if (countEl) {
+        countEl.textContent = `${results.length} result${results.length !== 1 ? 's' : ''} for '${esc(value)}'`;
+        countEl.style.display = 'block';
+      }
+      const list = document.getElementById('article-list');
+      if (!results.length) {
+        list.innerHTML = '<div class="empty-state">No articles match your search.</div>';
+        return;
+      }
+      const sourceTypeMap = {};
+      state.sources.forEach(s => { sourceTypeMap[s.id] = s.feed_type; });
+      list.innerHTML = results.map(a => {
+        const feedType = sourceTypeMap[a.source_id] || 'rss';
+        const typeBadge = feedType === 'scrape'
+          ? `<span class="badge badge-scrape">SCRAPE</span>`
+          : `<span class="badge badge-rss">RSS</span>`;
+        let statusBadge = '';
+        if (a.session_status === 'in_progress') statusBadge = `<span class="badge badge-ip">In Progress</span>`;
+        else if (a.session_status === 'complete') statusBadge = `<span class="badge badge-done">Complete</span>`;
+        else statusBadge = `<span class="badge badge-ns">Not Started</span>`;
+        const summary = a.summary ? `<div class="card-summary">${esc(a.summary)}</div>` : '';
+        const urlJson = JSON.stringify(a.url);
+        return `
+          <div class="article-card" id="article-card-${a.id}" onclick="openInSession(${urlJson})">
+            <div class="card-top">
+              <div class="card-title">${esc(a.title || a.url)}</div>
+              ${typeBadge}
+              <span id="article-status-badge-${a.id}">${statusBadge}</span>
+            </div>
+            <div class="card-meta">
+              <span>${esc(a.source_name || '')}</span>
+              ${a.published_date ? `<span>${fmtDate(a.published_date)}</span>` : ''}
+            </div>
+            ${summary}
+            <div class="article-card-actions" onclick="event.stopPropagation()">
+              <button class="btn sm" onclick="openInSession(${urlJson})">Study</button>
+              <button class="btn sm" onclick="markArticle(${urlJson}, 'read', ${a.id})">Mark Read</button>
+              <button class="btn sm danger" onclick="dismissArticle(${urlJson}, ${a.id})">Dismiss</button>
+            </div>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      showToast('Search failed: ' + err.message, 'error');
+    }
+  }, 400);
+}
+
+// ---------------------------------------------------------------------------
+// Session History
+// ---------------------------------------------------------------------------
+async function loadHistory() {
+  try {
+    const sessions = await apiFetch('/api/sessions/history');
+    const completed = sessions.filter(s => s.session_status === 'complete').length;
+    const badge = document.getElementById('history-badge');
+    if (badge) {
+      badge.textContent = completed;
+      badge.classList.toggle('visible', completed > 0);
+    }
+    const subheading = document.getElementById('history-subheading');
+    if (subheading) subheading.textContent = `${completed} session${completed !== 1 ? 's' : ''} completed`;
+    renderHistory(sessions);
+  } catch (err) {
+    showToast('Failed to load history: ' + err.message, 'error');
+  }
+}
+
+function renderHistory(sessions) {
+  const list = document.getElementById('history-list');
+  if (!list) return;
+  if (!sessions.length) {
+    list.innerHTML = `<div class="empty-state">No sessions completed yet. Start one from the Feed.</div>`;
+    return;
+  }
+  list.innerHTML = sessions.map(s => {
+    const statusBadge = s.session_status === 'complete'
+      ? `<span class="badge badge-done">Complete</span>`
+      : `<span class="badge badge-ip">In Progress</span>`;
+    const lastActivity = s.last_activity ? fmtDate(s.last_activity) : '—';
+    const urlJson = JSON.stringify(s.url);
+    return `
+      <div class="history-card">
+        <div class="history-card-title">${esc(s.title || s.url)}</div>
+        <div class="history-card-meta">
+          ${s.source_name ? `<span class="badge badge-rss">${esc(s.source_name)}</span>` : ''}
+          ${s.published_date ? `<span class="history-card-detail">${fmtDate(s.published_date)}</span>` : ''}
+          ${statusBadge}
+        </div>
+        <div class="history-card-detail">${s.response_count || 0} responses logged · Last activity: ${lastActivity}</div>
+        <div class="history-card-actions">
+          <a class="btn sm" href="${esc(s.url)}" target="_blank" rel="noopener">View Article</a>
+          <button class="btn sm primary" onclick="openInSession(${urlJson})">Re-study</button>
+        </div>
+      </div>`;
+  }).join('');
 }
 </script>
 

@@ -5,6 +5,7 @@ No API keys.
 """
 
 import logging
+import time
 from typing import Optional
 import ollama_client
 import db
@@ -60,7 +61,27 @@ def generate_notebook_entry(
         "Return only the JSON object. No other text."
     )
 
-    result = ollama_client.generate_json(user_prompt, system=_SYSTEM_PROMPT)
+    MAX_RETRIES = 2
+    last_error = None
+    result = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            result = ollama_client.generate_json(user_prompt, system=_SYSTEM_PROMPT, timeout=90)
+            if not isinstance(result, dict):
+                raise ValueError(f"Expected dict from model, got {type(result)}")
+            break
+        except ValueError as exc:
+            last_error = exc
+            logger.warning("Attempt %d/%d: JSON parse failed — %s", attempt + 1, MAX_RETRIES, exc)
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(3)
+        except Exception as exc:
+            last_error = exc
+            logger.warning("Attempt %d/%d: Ollama call failed — %s", attempt + 1, MAX_RETRIES, exc)
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(3)
+    if result is None:
+        raise ValueError(f"Failed after {MAX_RETRIES} attempts: {last_error}")
     if not isinstance(result, dict):
         raise ValueError(f"Expected dict from model, got {type(result)}")
 

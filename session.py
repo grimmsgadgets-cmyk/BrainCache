@@ -4,6 +4,7 @@ All AI calls via ollama_client. No API keys.
 """
 
 import logging
+import time
 from typing import Optional
 import ollama_client
 import db
@@ -39,12 +40,27 @@ def generate_pre_read_prompt(title: str, summary: str) -> dict:
         f"Summary: {summary}\n\n"
         "Return only the JSON object. No other text."
     )
-    result = ollama_client.generate_json(user_prompt, system=_SYSTEM_PROMPT)
-    if not isinstance(result, dict):
-        raise ValueError(f"Expected dict, got {type(result)}")
-    if "hypothesis_question" not in result or "unknown_terms" not in result:
-        raise ValueError(f"Missing required keys in model response: {list(result.keys())}")
-    return result
+    MAX_RETRIES = 2
+    last_error = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            result = ollama_client.generate_json(user_prompt, system=_SYSTEM_PROMPT, timeout=90)
+            if not isinstance(result, dict):
+                raise ValueError(f"Expected dict, got {type(result)}")
+            if "hypothesis_question" not in result or "unknown_terms" not in result:
+                raise ValueError(f"Missing required keys in model response: {list(result.keys())}")
+            return result
+        except ValueError as exc:
+            last_error = exc
+            logger.warning("Attempt %d/%d: JSON parse failed — %s", attempt + 1, MAX_RETRIES, exc)
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(3)
+        except Exception as exc:
+            last_error = exc
+            logger.warning("Attempt %d/%d: Ollama call failed — %s", attempt + 1, MAX_RETRIES, exc)
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(3)
+    raise ValueError(f"Failed after {MAX_RETRIES} attempts: {last_error}")
 
 
 def generate_socratic_questions(full_article_text: str) -> list:
@@ -75,12 +91,27 @@ def generate_socratic_questions(full_article_text: str) -> list:
         f"Article excerpt:\n{truncated_text}\n\n"
         "Return only the JSON array. No other text."
     )
-    result = ollama_client.generate_json(user_prompt, system=_SYSTEM_PROMPT)
-    if not isinstance(result, list):
-        raise ValueError(f"Expected list, got {type(result)}")
-    if len(result) != 4:
-        raise ValueError(f"Expected exactly 4 questions, got {len(result)}")
-    return result
+    MAX_RETRIES = 2
+    last_error = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            result = ollama_client.generate_json(user_prompt, system=_SYSTEM_PROMPT, timeout=90)
+            if not isinstance(result, list):
+                raise ValueError(f"Expected list, got {type(result)}")
+            if len(result) != 4:
+                raise ValueError(f"Expected exactly 4 questions, got {len(result)}")
+            return result
+        except ValueError as exc:
+            last_error = exc
+            logger.warning("Attempt %d/%d: JSON parse failed — %s", attempt + 1, MAX_RETRIES, exc)
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(3)
+        except Exception as exc:
+            last_error = exc
+            logger.warning("Attempt %d/%d: Ollama call failed — %s", attempt + 1, MAX_RETRIES, exc)
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(3)
+    raise ValueError(f"Failed after {MAX_RETRIES} attempts: {last_error}")
 
 
 def generate_session_summary(article_url: str, session_logs: list) -> dict:
@@ -114,7 +145,22 @@ def generate_session_summary(article_url: str, session_logs: list) -> dict:
         "I Don't Know notebook for further study.\n\n"
         "Return only the JSON object. No other text."
     )
-    result = ollama_client.generate_json(user_prompt, system=_SYSTEM_PROMPT)
-    if not isinstance(result, dict):
-        raise ValueError(f"Expected dict, got {type(result)}")
-    return result
+    MAX_RETRIES = 2
+    last_error = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            result = ollama_client.generate_json(user_prompt, system=_SYSTEM_PROMPT, timeout=90)
+            if not isinstance(result, dict):
+                raise ValueError(f"Expected dict, got {type(result)}")
+            return result
+        except ValueError as exc:
+            last_error = exc
+            logger.warning("Attempt %d/%d: JSON parse failed — %s", attempt + 1, MAX_RETRIES, exc)
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(3)
+        except Exception as exc:
+            last_error = exc
+            logger.warning("Attempt %d/%d: Ollama call failed — %s", attempt + 1, MAX_RETRIES, exc)
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(3)
+    raise ValueError(f"Failed after {MAX_RETRIES} attempts: {last_error}")

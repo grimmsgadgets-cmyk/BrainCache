@@ -103,6 +103,13 @@ def init_db(db_path: str) -> None:
                 "VALUES (?, ?, ?, ?, ?)",
                 [(n, u, ft, sel, ts) for n, u, ft, sel in _SEED_SOURCES],
             )
+        # Add dismissed column if it doesn't exist (migration for existing DBs)
+        try:
+            conn.execute(
+                "ALTER TABLE articles ADD COLUMN dismissed INTEGER DEFAULT 0"
+            )
+        except sqlite3.OperationalError:
+            pass  # Column already exists
     conn.close()
 
 
@@ -198,15 +205,18 @@ def delete_source(db_path: str, source_id: int) -> bool:
 # ---------------------------------------------------------------------------
 
 def get_all_articles(
-    db_path: str, source_id: Optional[int] = None
+    db_path: str,
+    source_id: Optional[int] = None,
+    include_dismissed: bool = False,
 ) -> list[dict]:
     conn = get_connection(db_path)
+    dismissed_clause = "" if include_dismissed else "AND (a.dismissed = 0 OR a.dismissed IS NULL)"
     if source_id is not None:
         rows = conn.execute(
             "SELECT a.*, s.name AS source_name "
             "FROM articles a "
             "LEFT JOIN sources s ON a.source_id = s.id "
-            "WHERE a.source_id = ? "
+            f"WHERE a.source_id = ? {dismissed_clause} "
             "ORDER BY a.id DESC",
             (source_id,),
         ).fetchall()
@@ -215,6 +225,7 @@ def get_all_articles(
             "SELECT a.*, s.name AS source_name "
             "FROM articles a "
             "LEFT JOIN sources s ON a.source_id = s.id "
+            f"WHERE 1=1 {dismissed_clause} "
             "ORDER BY a.id DESC"
         ).fetchall()
     conn.close()

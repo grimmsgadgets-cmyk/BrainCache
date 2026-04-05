@@ -15,8 +15,8 @@ from typing import Optional
 import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -216,6 +216,11 @@ class NotebookResolve(BaseModel):
     is_resolved: bool
 
 
+class ArticleDismiss(BaseModel):
+    url: str
+    action: str  # "read" or "dismiss"
+
+
 # ---------------------------------------------------------------------------
 # Routes — Sources
 # ---------------------------------------------------------------------------
@@ -289,6 +294,88 @@ async def api_test_source(source_id: int):
 @app.get("/api/articles")
 async def api_get_articles(source_id: Optional[int] = None):
     return db.get_all_articles(DB_PATH, source_id=source_id)
+
+
+@app.get("/api/articles/search")
+async def api_search_articles(q: Optional[str] = Query(default=None)):
+    if not q or len(q) < 2:
+        raise HTTPException(status_code=400, detail="q must be at least 2 characters")
+    conn = db.get_connection(DB_PATH)
+    rows = conn.execute(
+        """
+        SELECT a.*, s.name as source_name
+        FROM articles a
+        LEFT JOIN sources s ON a.source_id = s.id
+        WHERE a.title LIKE ?
+           OR a.summary LIKE ?
+        ORDER BY a.id DESC
+        LIMIT 100
+        """,
+        (f"%{q}%", f"%{q}%"),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+@app.post("/api/articles/dismiss")
+async def api_dismiss_article(body: ArticleDismiss):
+    article = db.get_article_by_url(DB_PATH, body.url)
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    conn = db.get_connection(DB_PATH)
+    if body.action == "read":
+        db.update_article_session_status(DB_PATH, body.url, "complete")
+    elif body.action == "dismiss":
+        with conn:
+            conn.execute(
+                "UPDATE articles SET dismissed = 1 WHERE url = ?", (body.url,)
+            )
+        conn.close()
+    else:
+        conn.close()
+        raise HTTPException(status_code=400, detail="action must be 'read' or 'dismiss'")
+    return {"url": body.url, "action": body.action}
+
+
+@app.get("/api/session/status/{article_url:path}")
+async def api_session_status(article_url: str):
+    article = db.get_article_by_url(DB_PATH, article_url)
+    if not article:
+        return {"status": "not_found"}
+    logs = db.get_session_logs_by_article(DB_PATH, article_url)
+    return {
+        "status": article["session_status"],
+        "log_count": len(logs),
+        "can_resume": (
+            article["session_status"] == "in_progress"
+            and len(logs) > 0
+        ),
+        "last_phase": logs[-1]["phase"] if logs else None,
+        "article_title": article.get("title"),
+    }
+
+
+@app.get("/api/sessions/history")
+async def api_sessions_history():
+    conn = db.get_connection(DB_PATH)
+    rows = conn.execute(
+        """
+        SELECT a.url, a.title, a.session_status,
+               a.scraped_at, a.published_date,
+               s.name as source_name,
+               COUNT(sl.id) as response_count,
+               MAX(sl.timestamp) as last_activity
+        FROM articles a
+        LEFT JOIN sources s ON a.source_id = s.id
+        LEFT JOIN session_logs sl ON sl.article_url = a.url
+        WHERE a.session_status != 'not_started'
+        GROUP BY a.url
+        ORDER BY last_activity DESC
+        LIMIT 50
+        """
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 # ---------------------------------------------------------------------------
@@ -407,36 +494,53 @@ async def ws_session(websocket: WebSocket):
         # Wait for start message
         msg = await websocket.receive_json()
         if msg.get("type") != "start":
-            await websocket.send_json({"type": "error", "message": "Expected start message"})
+            await websocket.send_json({"type": "error", "message": "Expected start message", "recoverable": False})
             return
         url = (msg.get("url") or "").strip()
         if not url:
-            await websocket.send_json({"type": "error", "message": "URL is required"})
+            await websocket.send_json({"type": "error", "message": "URL is required", "recoverable": False})
             return
 
-        # 1. Fetch article full text
+        # 1. Fetch article full text (fatal if empty)
         await websocket.send_json({"type": "status", "message": "Fetching article..."})
-        full_text = await asyncio.to_thread(scraper.fetch_full_article_text, url)
+        try:
+            full_text = await asyncio.to_thread(scraper.fetch_full_article_text, url)
+        except Exception as exc:
+            await websocket.send_json({"type": "error", "message": f"Failed to fetch article: {exc}", "recoverable": False})
+            return
+        if not full_text:
+            await websocket.send_json({"type": "error", "message": "Article text is empty — cannot start session.", "recoverable": False})
+            return
 
-        # 3. Update full_text in DB
+        # Update full_text in DB and mark in_progress
         await asyncio.to_thread(db.update_article_full_text, DB_PATH, url, full_text)
-        # 4. Mark in_progress
         await asyncio.to_thread(db.update_article_session_status, DB_PATH, url, "in_progress")
 
-        # 5. Get article metadata
+        # Get article metadata
         article = await asyncio.to_thread(db.get_article_by_url, DB_PATH, url)
         title = (article.get("title") or url) if article else url
         summary = (article.get("summary") or "") if article else ""
 
-        # 6-7. Generate pre-read prompt
+        # Generate pre-read prompt (recoverable)
         await websocket.send_json({"type": "status", "message": "Generating pre-read prompt..."})
-        pre_read = await asyncio.to_thread(
-            session_module.generate_pre_read_prompt, title, summary
-        )
-        hypothesis_question = pre_read.get("hypothesis_question", "")
-        unknown_terms = pre_read.get("unknown_terms", [])
+        hypothesis_question = ""
+        unknown_terms = []
+        try:
+            pre_read = await asyncio.to_thread(
+                session_module.generate_pre_read_prompt, title, summary
+            )
+            hypothesis_question = pre_read.get("hypothesis_question", "")
+            unknown_terms = pre_read.get("unknown_terms", [])
+        except Exception as exc:
+            logger.warning("Pre-read prompt generation failed: %s", exc)
+            await websocket.send_json({
+                "type": "error",
+                "message": f"Pre-read prompt failed: {exc}",
+                "recoverable": True,
+            })
+            hypothesis_question = f"Before reading — what do you already know about: {title}?"
 
-        # 8. Send pre-read phase
+        # Send pre-read phase
         await websocket.send_json({
             "type": "phase",
             "phase": "pre",
@@ -444,33 +548,44 @@ async def ws_session(websocket: WebSocket):
         })
         tts.speak_prompt(hypothesis_question, _CONFIG)
 
-        # 9. Wait for pre-read response
+        # Wait for pre-read response
         pre_msg = await websocket.receive_json()
-
-        # 10. Log response
         await asyncio.to_thread(
             db.insert_session_log,
             DB_PATH, url, "pre", hypothesis_question,
             pre_msg.get("text", ""),
         )
 
-        # 11-13. Generate notebook entries for unknown terms
+        # Generate notebook entries (recoverable per term)
         await websocket.send_json({"type": "status", "message": "Generating notebook entries..."})
         notebook_entries = []
         for term in unknown_terms:
-            entry = await asyncio.to_thread(
-                notebook_module.generate_notebook_entry, DB_PATH, term, url
-            )
-            notebook_entries.append(entry)
+            try:
+                entry = await asyncio.to_thread(
+                    notebook_module.generate_notebook_entry, DB_PATH, term, url
+                )
+                notebook_entries.append(entry)
+            except Exception as exc:
+                logger.warning("Notebook entry failed for '%s': %s", term, exc)
+                await websocket.send_json({
+                    "type": "error",
+                    "message": f"Notebook entry for '{term}' failed: {exc}",
+                    "recoverable": True,
+                })
         await websocket.send_json({"type": "terms", "entries": notebook_entries})
 
-        # 14-15. Generate Socratic questions
+        # Generate Socratic questions (fatal after retries)
         await websocket.send_json({"type": "status", "message": "Generating Socratic questions..."})
-        questions = await asyncio.to_thread(
-            session_module.generate_socratic_questions, full_text
-        )
+        try:
+            questions = await asyncio.to_thread(
+                session_module.generate_socratic_questions, full_text
+            )
+        except Exception as exc:
+            logger.error("Socratic question generation failed: %s", exc)
+            await websocket.send_json({"type": "error", "message": f"Socratic questions failed: {exc}", "recoverable": False})
+            return
 
-        # 16. Send each question, wait for response, log
+        # Send each question, wait for response, log
         for i, question in enumerate(questions):
             await websocket.send_json({
                 "type": "question",
@@ -486,15 +601,24 @@ async def ws_session(websocket: WebSocket):
                 q_msg.get("text", ""),
             )
 
-        # 17-20. Generate and send summary
+        # Generate session summary (recoverable)
         await websocket.send_json({"type": "status", "message": "Generating session summary..."})
         all_logs = await asyncio.to_thread(db.get_session_logs_by_article, DB_PATH, url)
-        summary_data = await asyncio.to_thread(
-            session_module.generate_session_summary, url, all_logs
-        )
+        try:
+            summary_data = await asyncio.to_thread(
+                session_module.generate_session_summary, url, all_logs
+            )
+        except Exception as exc:
+            logger.warning("Session summary generation failed: %s", exc)
+            await websocket.send_json({
+                "type": "error",
+                "message": f"Summary generation failed: {exc}",
+                "recoverable": True,
+            })
+            summary_data = {"strong_points": [], "gap_terms": [], "recommended_entries": []}
         await websocket.send_json({"type": "summary", "data": summary_data})
 
-        # 21-22. Mark complete
+        # Mark complete
         await asyncio.to_thread(db.update_article_session_status, DB_PATH, url, "complete")
         tts.speak_prompt("Session complete", _CONFIG)
         await websocket.send_json({"type": "complete"})
@@ -504,7 +628,7 @@ async def ws_session(websocket: WebSocket):
     except Exception as exc:
         logger.error("Session WebSocket error: %s", exc)
         try:
-            await websocket.send_json({"type": "error", "message": str(exc)})
+            await websocket.send_json({"type": "error", "message": str(exc), "recoverable": False})
         except Exception:
             pass
 
@@ -579,6 +703,64 @@ async def api_create_notebook_entry(body: NotebookCreate):
 @app.get("/api/notebook")
 async def api_get_notebook():
     return db.get_all_notebook_entries(DB_PATH)
+
+
+@app.get("/api/notebook/export")
+async def api_export_notebook():
+    entries = db.get_all_notebook_entries(DB_PATH)
+    lines = [
+        "# BrainCache — I Don't Know Notebook",
+        f"Exported: {db.now_iso()}",
+        f"Total entries: {len(entries)}",
+        "",
+        "---",
+        "",
+    ]
+    unresolved = [e for e in entries if not e["is_resolved"]]
+    resolved   = [e for e in entries if e["is_resolved"]]
+
+    if unresolved:
+        lines.append("## Unresolved\n")
+        for e in unresolved:
+            lines.append(f"### {e['term']}")
+            if e.get("mitre_reference"):
+                lines.append(f"**MITRE:** {e['mitre_reference']}")
+            if e.get("hypothesis_prompt"):
+                lines.append(f"\n**Hypothesis prompt:**")
+                lines.append(e["hypothesis_prompt"])
+            if e.get("plain_explanation"):
+                lines.append(f"\n**Explanation:**")
+                lines.append(e["plain_explanation"])
+            if e.get("socratic_questions"):
+                lines.append(f"\n**Socratic questions:**")
+                qs = e["socratic_questions"]
+                if isinstance(qs, list):
+                    for i, q in enumerate(qs, 1):
+                        lines.append(f"{i}. {q}")
+            if e.get("resolution_target"):
+                lines.append(f"\n**Resolve when you can say:**")
+                lines.append(f"*{e['resolution_target']}*")
+            if e.get("source_article_url"):
+                lines.append(f"\n*Source: {e['source_article_url']}*")
+            lines.append("\n---\n")
+
+    if resolved:
+        lines.append("## Resolved\n")
+        for e in resolved:
+            lines.append(f"### ~~{e['term']}~~")
+            lines.append(f"*Resolved: {e.get('resolved_at', 'unknown')}*")
+            if e.get("plain_explanation"):
+                lines.append(e["plain_explanation"])
+            lines.append("\n---\n")
+
+    content = "\n".join(lines)
+    return Response(
+        content=content,
+        media_type="text/markdown",
+        headers={
+            "Content-Disposition": 'attachment; filename="braincache-notebook.md"'
+        },
+    )
 
 
 @app.put("/api/notebook/{entry_id}/resolve")
