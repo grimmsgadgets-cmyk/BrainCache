@@ -7,11 +7,13 @@ Ollama status check.
 import asyncio
 import logging
 import os
+import shlex
+import tempfile
 from contextlib import asynccontextmanager
 from typing import Optional
 
 import yaml
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -21,6 +23,8 @@ import scraper
 import ollama_client
 import session as session_module
 import notebook as notebook_module
+import tts
+import stt
 
 logging.basicConfig(
     level=logging.INFO,
@@ -203,6 +207,78 @@ async def api_ollama_status():
 
 
 # ---------------------------------------------------------------------------
+# Routes — Voice status
+# ---------------------------------------------------------------------------
+
+@app.get("/api/voice/status")
+async def api_voice_status():
+    return {
+        "tts": {
+            "available": tts.check_piper_available(_CONFIG),
+            "binary": _CONFIG.get("piper_binary", ""),
+            "model": _CONFIG.get("piper_model", ""),
+        },
+        "stt": {
+            "available": stt.check_whisper_available(_CONFIG),
+            "binary": _CONFIG.get("whisper_binary", ""),
+            "model": _CONFIG.get("whisper_model", ""),
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# Routes — Audio transcription
+# ---------------------------------------------------------------------------
+
+@app.post("/api/session/audio")
+async def api_transcribe_audio(audio: UploadFile = File(...)):
+    audio_bytes = await audio.read()
+    content_type = audio.content_type or ""
+    filename = audio.filename or ""
+
+    tmp_wav = None
+    tmp_webm = None
+    try:
+        is_webm = (
+            "webm" in content_type
+            or "ogg" in content_type
+            or "opus" in content_type
+            or filename.endswith(".webm")
+            or filename.endswith(".ogg")
+        )
+
+        if is_webm:
+            tmp_webm_file = tempfile.NamedTemporaryFile(suffix=".webm", delete=False)
+            tmp_webm = tmp_webm_file.name
+            tmp_webm_file.write(audio_bytes)
+            tmp_webm_file.close()
+
+            tmp_wav_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+            tmp_wav = tmp_wav_file.name
+            tmp_wav_file.close()
+
+            ok = stt.save_webm_as_wav(audio_bytes, tmp_wav)
+            if not ok:
+                return {"text": ""}
+        else:
+            tmp_wav_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+            tmp_wav = tmp_wav_file.name
+            tmp_wav_file.write(audio_bytes)
+            tmp_wav_file.close()
+
+        text = await asyncio.to_thread(stt.transcribe_audio, tmp_wav, _CONFIG)
+        return {"text": text}
+
+    finally:
+        for path in (tmp_wav, tmp_webm):
+            if path:
+                try:
+                    os.unlink(path)
+                except OSError:
+                    pass
+
+
+# ---------------------------------------------------------------------------
 # WebSocket — Feynman session
 # ---------------------------------------------------------------------------
 
@@ -249,6 +325,7 @@ async def ws_session(websocket: WebSocket):
             "phase": "pre",
             "prompt": hypothesis_question,
         })
+        tts.speak_prompt(hypothesis_question, _CONFIG)
 
         # 9. Wait for pre-read response
         pre_msg = await websocket.receive_json()
@@ -284,6 +361,7 @@ async def ws_session(websocket: WebSocket):
                 "total": len(questions),
                 "text": question,
             })
+            tts.speak_prompt(question, _CONFIG)
             q_msg = await websocket.receive_json()
             await asyncio.to_thread(
                 db.insert_session_log,
@@ -301,6 +379,7 @@ async def ws_session(websocket: WebSocket):
 
         # 21-22. Mark complete
         await asyncio.to_thread(db.update_article_session_status, DB_PATH, url, "complete")
+        tts.speak_prompt("Session complete", _CONFIG)
         await websocket.send_json({"type": "complete"})
 
     except WebSocketDisconnect:
