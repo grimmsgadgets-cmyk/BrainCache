@@ -1,7 +1,7 @@
 """
 tts.py — Piper TTS subprocess wrapper for BrainCache.
 Calls the Piper binary to synthesize speech from text
-and plays it via aplay (Linux ALSA).
+and plays it via ffplay (cross-platform, ships with ffmpeg).
 Falls back silently if Piper is unavailable.
 """
 
@@ -63,9 +63,13 @@ def speak(text: str, config: dict) -> bool:
             return False
 
         try:
-            subprocess.run(["aplay", "-q", tmp_wav_path], capture_output=True, timeout=30)
+            subprocess.run(
+                ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", tmp_wav_path],
+                capture_output=True,
+                timeout=30,
+            )
         except Exception as exc:
-            logger.warning("aplay playback failed (non-fatal): %s", exc)
+            logger.warning("ffplay playback failed (non-fatal): %s", exc)
 
         return True
 

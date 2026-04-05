@@ -6,9 +6,11 @@ RUN apt-get update && apt-get install -y curl tar \
 
 RUN mkdir -p /opt/piper/voices
 
-# Download Piper binary
-RUN curl -L \
-    https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz \
+# Download Piper binary — pick the correct arch (amd64 → x86_64, arm64 → aarch64)
+ARG TARGETARCH
+RUN PIPER_ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "x86_64") \
+    && curl -L \
+    https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_${PIPER_ARCH}.tar.gz \
     | tar -xz -C /opt/piper --strip-components=1
 
 # Download voice model and config
